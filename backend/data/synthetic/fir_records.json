@@ -1,0 +1,32 @@
+[
+  {
+    "document_id": "DOC-FIR-2024-001",
+    "case_id": "CASE-2024-8812",
+    "filename": "FIR_8812_EconomicOffences.pdf",
+    "title": "First Information Report No. 8812/2024 - Special Cell",
+    "file_type": "PDF_SCAN",
+    "extracted_text": "FIRST INFORMATION REPORT (Under Section 154 Cr.P.C.)\nState: Delhi | District: New Delhi | Police Station: Special Cell / EOW\nFIR No: 8812/2024 | Date: 01/02/2024\n\nActs & Sections: Section 420, 120B IPC r/w Section 13(2) Prevention of Corruption Act and FEMA guidelines.\n\nBrief Allegations: Intelligence sources report that an unorganized financial network led by Vikram Malhotra (also alias 'Vicky') is laundering proceeds through shell corporations. Associated persons include Amit Shahani (Finance Director at Apex Global Logistics) and Rahul Sharma (Courier). On 14-02-2024, a covert coordination meeting is scheduled at Hotel Grand Palace, Aerocity Delhi. Vehicle Toyota Fortuner DL-04-E-5544 registered to Zenith Holdings was observed ferrying contraband documents. Bank Account #9921884102 at Metro National Bank linked to foreign remittances to Alpine Holdings (Zurich, Switzerland).",
+    "uploaded_by": "user-rajiv-sen",
+    "created_at": "2024-02-01T09:00:00Z"
+  },
+  {
+    "document_id": "DOC-CCTV-2024-014",
+    "case_id": "CASE-2024-8812",
+    "filename": "Aerocity_Hotel_CCTV_Log_Feb14.pdf",
+    "title": "Security Surveillance Transcript - Hotel Grand Palace Aerocity",
+    "file_type": "PDF_SCAN",
+    "extracted_text": "SURVEILLANCE LOG: HOTEL GRAND PALACE, AEROCITY, NEW DELHI\nDate of Surveillance: 14-02-2024\nCamera ID: CAM-04 (Lobby Lounge & Private Dining)\nTime 19:15: Vehicle Toyota Fortuner DL-04-E-5544 arrives at main porch. Subject identified as Vikram Malhotra exits vehicle.\nTime 19:28: Amit Shahani arrives via private taxi.\nTime 19:30: Vikram Malhotra and Amit Shahani sit at Table 12 in the private lounge. Amit hands an encrypted ledger tablet to Vikram.\nTime 20:45: Meeting concludes. Both subjects depart separately.\nCamera ID: CAM-09 (Valet Parking): Vehicle DL-04-E-5544 departs toward Gurgaon Toll.",
+    "uploaded_by": "user-rajiv-sen",
+    "created_at": "2024-02-15T11:00:00Z"
+  },
+  {
+    "document_id": "DOC-WITNESS-2024-002",
+    "case_id": "CASE-2024-8812",
+    "filename": "Witness_Statement_Karan_Mehra.pdf",
+    "title": "Interrogation & Witness Statement - Karan Mehra (Driver)",
+    "file_type": "PDF_SCAN",
+    "extracted_text": "STATEMENT OF WITNESS KARAN MEHRA (S/O S.K. Mehra, Age 34, Chhatarpur Delhi)\nRecorded on: 18-02-2024 by Insp. Rajiv Sen\n\nQ: Who hired you to drive the Toyota Fortuner DL-04-E-5544?\nA: I work as a personal driver for Zenith Holdings. On 14-02-2024, Vikram Malhotra called me and told me he was currently out of the country in Dubai and that I should deliver the car to Rahul Sharma instead.\n\nInvestigator Note: Witness claims Vikram was in Dubai on Feb 14; however, physical CCTV footage (DOC-CCTV-2024-014) and CDR cell tower triangulation place Vikram Malhotra in Delhi at 19:34. This represents a critical factual contradiction.",
+    "uploaded_by": "user-rajiv-sen",
+    "created_at": "2024-02-18T16:30:00Z"
+  }
+]

@@ -1,0 +1,4 @@
+toll_id,case_id,timestamp,plate_number,vehicle_model,toll_plaza,direction,latitude,longitude,driver_observed,evidence_id
+TOLL-501,CASE-2024-8812,2024-02-14T18:40:00Z,DL-04-E-5544,Toyota Fortuner (Black),Delhi-Gurgaon Kherki Daula Toll,Northbound,28.4032,76.9930,Unverified Driver,EVID-TOLL-01
+TOLL-502,CASE-2024-8812,2024-02-14T21:10:00Z,DL-04-E-5544,Toyota Fortuner (Black),Delhi-Gurgaon Kherki Daula Toll,Southbound,28.4032,76.9930,Vikram Malhotra / Vicky,EVID-TOLL-01
+TOLL-503,CASE-2024-8812,2024-02-16T08:30:00Z,MH-02-CP-8811,Mercedes E-Class,Bandra-Worli Sea Link Mumbai,Southbound,19.0330,72.8170,Amit Shahani,EVID-TOLL-01

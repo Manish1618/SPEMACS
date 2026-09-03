@@ -1,0 +1,33 @@
+[
+  {
+    "entity_name": "Vikram Malhotra",
+    "aliases": ["Vicky", "V. Malhotra"],
+    "source_name": "Ministry of Corporate Affairs (MCA) Public Registry",
+    "source_url": "https://mca.gov.in/public/company-master/zenith-holdings",
+    "reliability_score": 0.95,
+    "confidence": 0.96,
+    "extracted_claims": "Director of Zenith Holdings Pvt Ltd (CIN: U74999DL2018PTC334412). Registered office in Connaught Place, New Delhi. Company flagged for dormant tax filing.",
+    "is_potential_match": false
+  },
+  {
+    "entity_name": "Amit Shahani",
+    "aliases": ["A. Shahani"],
+    "source_name": "OpenCorporates Global Registry",
+    "source_url": "https://opencorporates.com/companies/in/apex-logistics",
+    "reliability_score": 0.90,
+    "confidence": 0.92,
+    "extracted_claims": "Managing Partner at Apex Global Logistics. Linked to cross-border shipping consignments from Nhava Sheva Mumbai Port to Jebel Ali, UAE.",
+    "is_potential_match": false
+  },
+  {
+    "entity_name": "Rahul Sharma",
+    "aliases": ["Rahul S."],
+    "source_name": "Public Social Media & Phone Directory Index",
+    "source_url": "https://public-telecom-index.in/lookup/+919871144553",
+    "reliability_score": 0.65,
+    "confidence": 0.72,
+    "extracted_claims": "Phone number +919871144553 tagged as 'Rahul Sharma Logistics Courier'. Note: Multiple public profiles with this name exist.",
+    "is_potential_match": true,
+    "verification_warning": "Potential Match — Human Verification Required"
+  }
+]
