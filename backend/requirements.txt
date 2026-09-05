@@ -1,9 +1,11 @@
 fastapi>=0.110.0
 uvicorn>=0.28.0
 pydantic>=2.6.0
+pydantic-settings>=2.6.0
 sqlalchemy>=2.0.28
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
 python-multipart>=0.0.9
 networkx>=3.2.1
 pandas>=2.2.1
@@ -11,3 +13,11 @@ scikit-learn>=1.4.1.post1
 rapidfuzz>=3.6.1
 requests>=2.31.0
 aiofiles>=23.2.1
+
+# Optional: document text extraction. app/services/extraction.py imports these
+# inside try blocks and reports a clear message when they are absent, so the API
+# runs without them - PDF and image ingestion simply returns no extracted text.
+# pytesseract also needs the tesseract binary installed on the host.
+# pypdf>=4.0.0
+# pytesseract>=0.3.10
+# Pillow>=10.0.0
