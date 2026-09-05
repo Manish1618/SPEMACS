@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Send, Sparkles, CheckCircle, ShieldAlert, CornerDownRight, HelpCircle, Mic, MicOff, Lightbulb, Scale, ArrowRight, ListTree, Globe2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Sparkles, CheckCircle, ShieldAlert, CornerDownRight, HelpCircle, Mic, MicOff, Lightbulb, Scale, ArrowRight, ListTree, Globe2, Copy, Check, Maximize2 } from 'lucide-react';
 import type { AIResponse, HighlightAction } from '../../types';
 import { api } from '../../lib/api';
+import { MarkdownMessage } from './MarkdownMessage';
+import { DetailSections } from './DetailSections';
 
 interface UniversalAIInvestigatorProps {
   activeCaseId: string;
-  onTriggerVisualHighlight: (action: HighlightAction) => void;
+  onTriggerVisualHighlight: (action: HighlightAction, options?: { navigate?: boolean }) => void;
   onOpenDocumentViewer?: () => void;
 }
 
@@ -23,7 +25,15 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hello Inspector. I am the **SPEMASS Universal AI Investigator** powered by a **Dynamic Investigation Query Planner** and GraphRAG. I can plan and answer open-ended questions across the case knowledge graph, scanned FIRs, CCTV transcripts, CDR tower telemetry, bank ledgers, and authorized OSINT. Ask any question in your own words."
+      content: [
+        "Hello Inspector. I am the **SPEMASS Universal AI Investigator**, running a **Dynamic Investigation Query Planner** over the case knowledge graph, scanned FIRs, CCTV transcripts, CDR tower telemetry, bank ledgers and authorized OSINT.",
+        "",
+        "Two ways to work:",
+        "- Ask anything in your own words and I answer the question you asked, with citations.",
+        "- Ask for **full information** - or flip the **Full Info** switch above - and the complete record set comes back in this chat: entity roster, relationship matrix, full chronology, financial trail, communications, evidence register with digests and custody, network analytics, OSINT independence, and the gaps.",
+        "",
+        "Name a subject and you get their individual dossier attached as well."
+      ].join("\n")
     }
   ]);
   const [inputQuery, setInputQuery] = useState('');
@@ -31,22 +41,34 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
   const [isRecording, setIsRecording] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'chat' | 'hypotheses'>('chat');
   const [hypotheses, setHypotheses] = useState<any[]>([]);
+  // Full Info mode: every answer also carries the complete case record set.
+  const [fullDetail, setFullDetail] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // A full brief is far taller than the viewport, so without this the answer
+  // lands below the fold and nothing on screen moves when it arrives.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, isLoading]);
 
   const sampleQueries = [
+    "Give me the full case brief with everything on file",
+    "Tell me everything about Vikram Malhotra",
+    "Show all networks and connected entities in this case",
     "Find unusual relationships that appeared after Person A met Person B and tell me whether any evidence connects them to this case.",
     "Where was Vikram on Feb 14 and is there any contradicting evidence?",
     "Show calls made by Rahul",
     "Are there any cross-case links to past operations?",
-    "Show evidence of yacht purchases"
+    "Has any of this evidence been modified?"
   ];
 
   // Fetch Hypotheses
   useEffect(() => {
     const fetchHypotheses = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/ai/hypotheses?case_id=${activeCaseId}`);
-        const data = await res.json();
-        setHypotheses(data);
+        const data = await api.getHypotheses(activeCaseId);
+        setHypotheses(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
       }
@@ -101,7 +123,12 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
 
     try {
       const historyPayload = newMessages.map(m => ({ role: m.role, content: m.content }));
-      const response: AIResponse = await api.investigate(activeCaseId, q, historyPayload);
+      const response: AIResponse = await api.investigate(
+        activeCaseId,
+        q,
+        historyPayload,
+        fullDetail ? 'full' : 'standard'
+      );
 
       setMessages([...newMessages, {
         role: 'assistant',
@@ -110,7 +137,8 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
       }]);
 
       if (response.visual_actions) {
-        onTriggerVisualHighlight(response.visual_actions);
+        // Apply the highlight now, but leave the investigator reading the answer.
+        onTriggerVisualHighlight(response.visual_actions, { navigate: false });
       }
     } catch (err) {
       setMessages([...newMessages, {
@@ -141,6 +169,36 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
           </div>
         </div>
 
+        <div className="flex items-center space-x-2">
+          {/* Full Info switch: attaches the complete record set to every answer */}
+          <button
+            onClick={() => setFullDetail(v => !v)}
+            title={
+              fullDetail
+                ? 'Full Info is on: answers arrive with the complete case record set attached.'
+                : 'Full Info is off: answers stay focused on the question asked.'
+            }
+            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              fullDetail
+                ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow'
+                : 'bg-dark-900 text-gray-400 border-gray-700 hover:text-white'
+            }`}
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span>Full Info</span>
+            <span
+              className={`w-7 h-3.5 rounded-full relative transition-colors ${
+                fullDetail ? 'bg-amber-500' : 'bg-gray-700'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all ${
+                  fullDetail ? 'left-4' : 'left-0.5'
+                }`}
+              />
+            </span>
+          </button>
+
         {/* Sub-Tabs Switcher */}
         <div className="flex items-center space-x-1 bg-dark-900 p-1 rounded-lg border border-gray-700">
           <button
@@ -164,6 +222,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
             <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
             <span>Theories & Hypotheses</span>
           </button>
+          </div>
         </div>
       </div>
 
@@ -171,7 +230,9 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
         <>
           {/* Quick Prompts Bar */}
           <div className="p-2.5 bg-dark-900 border-b border-gray-800/80 flex items-center space-x-2 overflow-x-auto">
-            <span className="text-[10px] uppercase font-bold text-gray-500 flex-shrink-0">Sample Questions:</span>
+            <span className="text-[10px] uppercase font-bold text-gray-500 flex-shrink-0">
+              {fullDetail ? 'Full Info mode · Sample Questions:' : 'Sample Questions:'}
+            </span>
             {sampleQueries.map((sq, i) => (
               <button
                 key={i}
@@ -191,7 +252,9 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[88%] rounded-xl p-4 text-xs leading-relaxed ${
+                  className={`rounded-xl p-4 text-xs leading-relaxed ${
+                    msg.responseObj?.detail_sections?.length ? 'max-w-full w-full' : 'max-w-[88%]'
+                  } ${
                     msg.role === 'user'
                       ? 'bg-indigo-600 text-white rounded-tr-none shadow-md'
                       : 'bg-dark-800 border border-gray-700/70 text-gray-200 rounded-tl-none shadow-md'
@@ -217,9 +280,31 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                   )}
 
                   {/* Answer Content */}
-                  <div className="whitespace-pre-line prose prose-invert max-w-none text-xs">
-                    {msg.content}
-                  </div>
+                  {msg.role === 'assistant' ? (
+                    <MarkdownMessage content={msg.content} />
+                  ) : (
+                    <div className="whitespace-pre-line text-xs">{msg.content}</div>
+                  )}
+
+                  {/* Copy the answer out for a case note or filing */}
+                  {msg.role === 'assistant' && msg.responseObj && (
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(msg.content);
+                          setCopiedIdx(idx);
+                          setTimeout(() => setCopiedIdx(c => (c === idx ? null : c)), 1500);
+                        }}
+                        className="flex items-center space-x-1 text-[10px] text-gray-400 hover:text-white transition-colors"
+                      >
+                        {copiedIdx === idx ? (
+                          <><Check className="w-3 h-3 text-emerald-400" /><span>Copied</span></>
+                        ) : (
+                          <><Copy className="w-3 h-3" /><span>Copy answer</span></>
+                        )}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Clarification Dialog if Ambiguous */}
                   {msg.responseObj?.is_ambiguous && (
@@ -352,15 +437,54 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                     </div>
                   )}
 
-                  {/* Trigger Visual Highlight Action Button */}
+                  {/* Full record set, rendered inline rather than sent elsewhere */}
+                  {msg.responseObj?.detail_sections && msg.responseObj.detail_sections.length > 0 && (
+                    <DetailSections
+                      sections={msg.responseObj.detail_sections}
+                      stats={msg.responseObj.detail_stats}
+                    />
+                  )}
+
+                  {/* Trigger Visual Highlight Action Button & Network Scope Card */}
                   {msg.responseObj?.visual_actions && (
-                    <button
-                      onClick={() => onTriggerVisualHighlight(msg.responseObj!.visual_actions!)}
-                      className="mt-3 w-full flex items-center justify-center space-x-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 py-1.5 px-3 rounded text-xs font-semibold transition-colors"
-                    >
-                      <CornerDownRight className="w-3.5 h-3.5" />
-                      <span>Highlight on Graph & Map ({msg.responseObj.visual_actions.description})</span>
-                    </button>
+                    <div className="mt-3 p-2.5 bg-indigo-950/30 border border-indigo-500/40 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center space-x-1.5 text-indigo-300 font-bold">
+                          <CornerDownRight className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Graph & Map Synchronization</span>
+                        </div>
+                        <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono border border-indigo-500/30">
+                          {msg.responseObj.visual_actions.node_ids?.length || 0} Nodes Mapped
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] text-gray-300 font-medium">
+                        {msg.responseObj.visual_actions.description}
+                      </div>
+
+                      {msg.responseObj.visual_actions.node_ids && msg.responseObj.visual_actions.node_ids.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {msg.responseObj.visual_actions.node_ids.slice(0, 10).map((nId, nIdx) => (
+                            <span key={nIdx} className="text-[9px] bg-dark-900 border border-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded font-mono">
+                              🔗 {nId}
+                            </span>
+                          ))}
+                          {msg.responseObj.visual_actions.node_ids.length > 10 && (
+                            <span className="text-[9px] bg-dark-900 border border-gray-700 text-gray-400 px-1.5 py-0.5 rounded font-mono">
+                              +{msg.responseObj.visual_actions.node_ids.length - 10} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => onTriggerVisualHighlight(msg.responseObj!.visual_actions!, { navigate: true })}
+                        className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-3 rounded-lg text-xs font-semibold shadow-md transition-all mt-1"
+                      >
+                        <span>🌐 Focus Network on Knowledge Graph & Map</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -369,9 +493,11 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
             {isLoading && (
               <div className="flex items-center space-x-2 text-xs text-gray-400 bg-dark-800 p-3 rounded-lg w-fit border border-gray-700">
                 <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" />
-                <span>Executing Dynamic Query Plan across Graph, DB & Telemetry...</span>
+                <span>{fullDetail ? 'Compiling the full case record set across Graph, DB, evidence & telemetry...' : 'Executing Dynamic Query Plan across Graph, DB & Telemetry...'}</span>
               </div>
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Bar with Voice Microphone */}
@@ -387,7 +513,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder="Ask any open-ended investigation question or click the mic to speak..."
+                placeholder={fullDetail ? 'Full Info is on - ask anything and the whole record set comes with the answer...' : 'Ask any open-ended investigation question, or say "give me the full brief"...'}
                 className="flex-1 bg-dark-900 border border-gray-700 rounded-lg px-3.5 py-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
               />
 

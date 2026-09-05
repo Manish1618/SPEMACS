@@ -184,6 +184,307 @@ def run_all_tests():
     assert replay_data["frame_count"] >= 5
     print(f"[PASS - REPLAY] Investigation Replay Engine ({replay_data['frame_count']} Chronological Frames)")
 
+    print("------------------------------------------------------------------")
+    print("        FULL-DETAIL MODE: COMPLETE RECORD SET IN CHAT              ")
+    print("------------------------------------------------------------------")
+
+    # FULL-01: a question that asks for everything returns the whole record set inline
+    full_q = {"case_id": "CASE-2024-8812", "query": "Give me full information about this case"}
+    full_res = client.post("/api/v1/ai/investigate", json=full_q, headers=headers).json()
+    sections = full_res["detail_sections"]
+    section_ids = {s["section_id"] for s in sections}
+    assert len(sections) >= 10, f"expected a full brief, got {len(sections)} sections"
+    for required in (
+        "case_overview",
+        "entity_roster",
+        "relationship_matrix",
+        "chronology",
+        "evidence_register",
+        "network_analytics",
+        "gaps_and_actions",
+    ):
+        assert required in section_ids, f"missing section {required}"
+    # Every figure is counted, not asserted: the brief's stats must match the API.
+    stats = full_res["detail_stats"]
+    graph_res = client.get("/api/v1/graph/case/CASE-2024-8812", headers=headers).json()
+    assert stats["entities"] == graph_res["stats"]["total_nodes"], (
+        f"brief claims {stats['entities']} entities, graph reports {graph_res['stats']['total_nodes']}"
+    )
+    assert len(full_res["citations"]) >= 1
+    print(f"[PASS - FULL-01] Full Case Brief In Chat ({len(sections)} Sections, {stats['events']} Events, {stats['evidence']} Artifacts)")
+
+    # FULL-02: naming a subject attaches their individual dossier
+    subj_q = {"case_id": "CASE-2024-8812", "query": "Tell me everything about Vikram Malhotra"}
+    subj_res = client.post("/api/v1/ai/investigate", json=subj_q, headers=headers).json()
+    dossiers = [s for s in subj_res["detail_sections"] if s["section_id"].startswith("dossier_")]
+    assert dossiers, "naming a subject should attach a dossier"
+    child_titles = {c["title"] for c in dossiers[0]["children"]}
+    assert {"Profile", "Direct links", "Activity log"} <= child_titles, child_titles
+    print(f"[PASS - FULL-02] Per-Subject Dossier Attached ({len(dossiers)} Subjects, {len(dossiers[0]['children'])} Blocks Each)")
+
+    # FULL-03: the detail_level switch enriches a focused answer without replacing it
+    focused = client.post(
+        "/api/v1/ai/investigate",
+        json={"case_id": "CASE-2024-8812", "query": "What contradicts this?"},
+        headers=headers,
+    ).json()
+    enriched = client.post(
+        "/api/v1/ai/investigate",
+        json={"case_id": "CASE-2024-8812", "query": "What contradicts this?", "detail_level": "full"},
+        headers=headers,
+    ).json()
+    assert enriched["answer"] == focused["answer"], "full mode must keep the focused answer"
+    assert not focused["detail_sections"], "standard mode should not attach the record set"
+    assert len(enriched["detail_sections"]) >= 10
+    assert enriched["query_plan"][-1]["action"] == "EXPAND_FULL_DETAIL"
+    print("[PASS - FULL-03] Detail Switch Appends Record Set Without Replacing The Answer")
+
+    # FULL-04: the brief and dossier are reachable directly, not only through chat
+    brief_res = client.get("/api/v1/ai/full-brief?case_id=CASE-2024-8812", headers=headers)
+    assert brief_res.status_code == 200 and brief_res.json()["stats"]["sections"] >= 10
+    dossier_res = client.get("/api/v1/ai/entity-dossier?entity_id=ENT-ORG-03", headers=headers)
+    assert dossier_res.status_code == 200 and "Alpine Holdings" in dossier_res.json()["title"]
+    assert client.get("/api/v1/ai/entity-dossier?entity_id=NO-SUCH", headers=headers).status_code == 404
+    print("[PASS - FULL-04] Standalone Brief & Dossier Endpoints (404 On Unknown Subject)")
+
+    # FULL-05: network topology answer no longer depends on a missing analytics method
+    net_res = client.post(
+        "/api/v1/ai/investigate",
+        json={"case_id": "CASE-2024-8812", "query": "Show all networks"},
+        headers=headers,
+    )
+    assert net_res.status_code == 200
+    assert "Hub Nodes" in net_res.json()["answer"]
+    print("[PASS - FULL-05] Network Topology Answer With Named Hubs & Bridges")
+
+    print("------------------------------------------------------------------")
+    print("           CROSS-CASE INTELLIGENCE ENGINE                          ")
+    print("------------------------------------------------------------------")
+
+    xc = client.get("/api/v1/cross-case/analyse?case_id=CASE-2024-8812", headers=headers)
+    assert xc.status_code == 200
+    report = xc.json()
+    assert report["authorised"] is True
+    links = report["links"]
+    assert links, "expected cross-case links between ShadowNet and Golden Falcon"
+
+    # XC-01: every link explains itself, is scored, and carries its uncertainties.
+    for link in links:
+        assert link["explanation"], f"{link['link_id']} has no stated basis"
+        assert link["uncertainty"], f"{link['link_id']} has no stated uncertainty"
+        assert 0.0 <= link["confidence"] <= 1.0
+        assert link["confidence_band"] in ("HIGH", "MODERATE", "LOW")
+        assert link["case_a"]["case_id"] == "CASE-2024-8812"
+        assert link["case_b"]["case_id"] != "CASE-2024-8812"
+    bases = {link["basis"] for link in links}
+    print(
+        f"[PASS - XC-01] {len(links)} Explained Links Across {len(bases)} Detection Bases "
+        f"({', '.join(sorted(bases))})"
+    )
+
+    # XC-02: the non-inference rule is present on the report and on every link.
+    assert "not evidence that an offence occurred" in report["caveat"]
+    assert all("Association only" in link["interpretation"] for link in links)
+    assert "not how incriminating" in report["confidence_meaning"]
+    # Nothing in the payload may score or rank suspicion.
+    forbidden = ("suspicion_score", "risk_score", "guilt", "criminality_score", "threat_score")
+    payload_text = xc.text.lower()
+    assert not any(term in payload_text for term in forbidden), "engine must not score suspicion"
+    print("[PASS - XC-02] Non-Inference Guardrail On Report And Every Link")
+
+    # XC-03: direct and multi-hop relationships are both detected.
+    direct = [l for l in links if l["basis"] == "CROSS_CASE_RELATIONSHIP"]
+    shared = [l for l in links if l["basis"] == "SHARED_ENTITY"]
+    hops = [l for l in links if l["basis"] == "MULTI_HOP_PATH"]
+    assert direct, "expected a recorded relationship spanning both files"
+    assert shared, "expected an entity referenced by both files"
+    assert hops, "expected an indirect network path between the files"
+    multi = hops[0]
+    assert multi["hops"] >= 2 and len(multi["path"]) == multi["hops"]
+    # An indirect path must score below a direct relationship on the same data.
+    assert multi["confidence"] < max(l["confidence"] for l in direct)
+    print(
+        f"[PASS - XC-03] Direct ({len(direct)}), Shared-Entity ({len(shared)}) And "
+        f"{multi['hops']}-Hop Paths Detected With Decayed Confidence"
+    )
+
+    # XC-04: authorisation is the outer boundary of the search.
+    analyst = client.post(
+        "/api/v1/auth/login", json={"username": "ananya_rao", "password": "analyst123"}
+    ).json()
+    analyst_headers = {"Authorization": f"Bearer {analyst['access_token']}"}
+    scoped = client.get(
+        "/api/v1/cross-case/analyse?case_id=CASE-2024-8812", headers=analyst_headers
+    ).json()
+    assert scoped["authorisation"]["cases_in_scope"] == ["CASE-2024-8812"]
+    assert scoped["authorisation"]["cases_out_of_scope"] >= 1
+    assert scoped["summary"]["link_count"] == 0, "analyst must not see the archived case"
+    # The excluded case must not be named anywhere in the analyst's payload.
+    assert "CASE-2023-1104" not in client.get(
+        "/api/v1/cross-case/analyse?case_id=CASE-2024-8812", headers=analyst_headers
+    ).text
+    denied = client.get(
+        "/api/v1/cross-case/analyse?case_id=CASE-2023-1104", headers=analyst_headers
+    )
+    assert denied.status_code == 403
+    print("[PASS - XC-04] Case-Level Authorisation Bounds The Search (403 On Unauthorised Case)")
+
+    # XC-05: evidence is attached, and failed integrity surfaces as contradiction.
+    with_evidence = [l for l in links if l["supporting_evidence"]]
+    assert with_evidence, "expected links to cite evidence artifacts"
+    assert all(
+        "integrity_status" in item
+        for link in with_evidence
+        for item in link["supporting_evidence"]
+    )
+    print(
+        f"[PASS - XC-05] {len(with_evidence)} Links Carry Cited Evidence With Integrity Status"
+    )
+
+    # XC-06: every link can drive the synchronized graph, map and timeline.
+    syncable = [
+        l for l in links if l["view_sync"]["node_ids"] or l["view_sync"]["event_ids"]
+    ]
+    assert syncable, "no link can be opened in the workspace"
+    spatial = [l for l in links if l["view_sync"]["coordinates"]]
+    temporal = [l for l in links if l["view_sync"]["timeline_from"]]
+    print(
+        f"[PASS - XC-06] View Sync: {len(syncable)} Graph, {len(spatial)} Map, "
+        f"{len(temporal)} Timeline"
+    )
+
+    # XC-07: reachable from the investigator chat, under the caller's own scope.
+    chat = client.post(
+        "/api/v1/ai/investigate",
+        json={
+            "case_id": "CASE-2024-8812",
+            "query": "Are there any cross-case links to past operations?",
+        },
+        headers=headers,
+    ).json()
+    assert "Cross-Case Intelligence" in chat["answer"]
+    assert "Association only" in chat["answer"]
+    section_ids = {s["section_id"] for s in chat["detail_sections"]}
+    assert {"cross_case_scope", "cross_case_links", "cross_case_basis"} <= section_ids
+    # The same question asked by the analyst must not reveal the archived case.
+    analyst_chat = client.post(
+        "/api/v1/ai/investigate",
+        json={
+            "case_id": "CASE-2024-8812",
+            "query": "Are there any cross-case links to past operations?",
+        },
+        headers=analyst_headers,
+    ).json()
+    assert "CASE-2023-1104" not in analyst_chat["answer"]
+    print("[PASS - XC-07] Chat Integration Respects The Caller's Own Authorised Scope")
+
+    # XC-08: the AI endpoints now refuse cases the caller cannot open.
+    assert client.post(
+        "/api/v1/ai/investigate",
+        json={"case_id": "CASE-2023-1104", "query": "Summarise this case"},
+        headers=analyst_headers,
+    ).status_code == 403
+    assert client.get(
+        "/api/v1/ai/full-brief?case_id=CASE-2023-1104", headers=analyst_headers
+    ).status_code == 403
+    print("[PASS - XC-08] AI Investigator Endpoints Enforce Case-Level Authorisation")
+
+    # XC-09: detection bases are published with their strength.
+    bases_doc = client.get("/api/v1/cross-case/bases", headers=headers).json()
+    assert len(bases_doc["bases"]) >= 8
+    assert all("strength" in b for b in bases_doc["bases"])
+    detail = client.get(
+        f"/api/v1/cross-case/link/{links[0]['link_id']}?case_id=CASE-2024-8812", headers=headers
+    )
+    assert detail.status_code == 200
+    assert client.get(
+        "/api/v1/cross-case/link/NO-SUCH-LINK?case_id=CASE-2024-8812", headers=headers
+    ).status_code == 404
+    print("[PASS - XC-09] Published Detection Bases And Per-Link Retrieval (404 On Unknown Link)")
+
+    # XC-10: the detectors the shipped dataset never triggers. The archived case is
+    # small, so alias, identifier, artifact and temporal matching would otherwise go
+    # untested. Fixture records are inserted, asserted against, and removed.
+    from datetime import datetime, timezone
+
+    from app.models.entities import Entity as EntityRow, Event as EventRow
+
+    fixture_db = SessionLocal()
+    fixture_entities = [
+        EntityRow(
+            entity_id="TMP-XC-PER",
+            case_id="CASE-2023-1104",
+            label="Vikram Malhotra",
+            entity_type="PERSON",
+            aliases=["V. Malhotra"],
+            properties={"pan": "SYNTH-PAN-0001"},
+        ),
+        EntityRow(
+            entity_id="TMP-XC-VEH",
+            case_id="CASE-2023-1104",
+            label="DL-04-E-5544",
+            entity_type="VEHICLE",
+            aliases=["DL04E5544"],
+            properties={"registration": "DL-04-E-5544"},
+        ),
+    ]
+    fixture_event = EventRow(
+        event_id="TMP-XC-EVT",
+        case_id="CASE-2023-1104",
+        title="Archived wharf handover",
+        event_type="MEETING",
+        timestamp=datetime(2024, 2, 14, 22, 0, tzinfo=timezone.utc),
+        location_name="Nhava Sheva container terminal",
+        latitude=18.9496,
+        longitude=72.951,
+        related_entities=["ENT-PER-01"],
+        evidence_id="EVID-CCTV-01",
+        summary="Test fixture for cross-case detector coverage.",
+    )
+    for row in fixture_entities:
+        fixture_db.add(row)
+    fixture_db.add(fixture_event)
+    fixture_db.commit()
+
+    try:
+        seeded = client.get(
+            "/api/v1/cross-case/analyse?case_id=CASE-2024-8812", headers=headers
+        ).json()
+        seeded_bases = {link["basis"] for link in seeded["links"]}
+        for expected in (
+            "ALIAS_MATCH",
+            "IDENTIFIER_MATCH",
+            "SHARED_ARTIFACT",
+            "TEMPORAL_PATTERN",
+        ):
+            assert expected in seeded_bases, f"{expected} detector produced nothing"
+
+        by_basis = {link["basis"]: link for link in seeded["links"]}
+        # A name collision must score below an issued identifier, and must ask for
+        # verification rather than assert identity.
+        assert by_basis["ALIAS_MATCH"]["confidence"] < by_basis["IDENTIFIER_MATCH"]["confidence"]
+        assert by_basis["ALIAS_MATCH"]["requires_human_verification"] is True
+        assert by_basis["TEMPORAL_PATTERN"]["confidence_band"] == "LOW"
+        assert all("Association only" in l["interpretation"] for l in seeded["links"])
+        print(
+            f"[PASS - XC-10] All 8 Detectors Exercised ({len(seeded_bases)} Bases; Alias "
+            f"{by_basis['ALIAS_MATCH']['confidence']:.2f} < Identifier "
+            f"{by_basis['IDENTIFIER_MATCH']['confidence']:.2f})"
+        )
+    finally:
+        fixture_db.delete(fixture_event)
+        for row in fixture_entities:
+            fixture_db.delete(row)
+        fixture_db.commit()
+        fixture_db.close()
+
+    restored = client.get(
+        "/api/v1/cross-case/analyse?case_id=CASE-2024-8812", headers=headers
+    ).json()
+    assert restored["summary"]["link_count"] == report["summary"]["link_count"], (
+        "fixture cleanup left records behind"
+    )
+
     passed += 1
 
     print("==================================================================")

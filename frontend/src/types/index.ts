@@ -132,6 +132,126 @@ export interface SourceIndependence {
   primary_origin: string;
 }
 
+export interface CrossCaseEvidenceRef {
+  evidence_id: string;
+  title: string;
+  case_id: string | null;
+  evidence_type?: string;
+  integrity_status: string;
+  sha256_hash?: string;
+  readable: boolean;
+}
+
+export interface CrossCasePathStep {
+  from: string;
+  from_label: string;
+  rel_type: string;
+  rel_id: string;
+  to: string;
+  to_label: string;
+  assertion_kind?: string;
+  evidence_ids?: string[];
+}
+
+export interface CrossCaseViewSync {
+  node_ids: string[];
+  event_ids: string[];
+  coordinates: number[][];
+  timeline_from: string | null;
+  timeline_to: string | null;
+}
+
+/**
+ * One detected relationship between the active case and another investigation.
+ * `confidence` is how sure the engine is that the link exists in the records -
+ * never a measure of suspicion. `interpretation` carries that in words.
+ */
+export interface CrossCaseLink {
+  link_id: string;
+  basis: string;
+  basis_label: string;
+  summary: string;
+  explanation: string[];
+  case_a: { case_id: string; title: string };
+  case_b: { case_id: string; title: string };
+  entities: {
+    entity_id: string;
+    label: string;
+    entity_type: string;
+    registered_case_id: string | null;
+    appears_in_cases: string[];
+  }[];
+  hops: number;
+  path: CrossCasePathStep[];
+  supporting_evidence: CrossCaseEvidenceRef[];
+  contradicting_evidence: { source: string; claim: string; discrepancy: string }[];
+  confidence: number;
+  confidence_band: 'HIGH' | 'MODERATE' | 'LOW';
+  confidence_meaning: string;
+  uncertainty: string[];
+  requires_human_verification: boolean;
+  interpretation: string;
+  view_sync: CrossCaseViewSync;
+}
+
+export interface CrossCaseReport {
+  case_id: string;
+  case_title?: string;
+  authorised: boolean;
+  generated_at?: string;
+  links: CrossCaseLink[];
+  related_cases: {
+    case_id: string;
+    title: string;
+    status: string;
+    link_count: number;
+    strongest_confidence: number;
+    strongest_basis: string;
+    bases: string[];
+  }[];
+  summary?: {
+    link_count: number;
+    related_case_count: number;
+    by_basis: Record<string, number>;
+    by_band: Record<string, number>;
+    needs_verification: number;
+  };
+  authorisation: {
+    username: string;
+    role: string;
+    cases_in_scope: string[];
+    cases_out_of_scope: number;
+    note: string;
+  } | string;
+  caveat: string;
+  confidence_meaning?: string;
+}
+
+export interface DetailStat {
+  label: string;
+  value: string | number;
+  tone?: 'good' | 'bad';
+}
+
+/**
+ * One expandable block of the full record set. The backend picks the kind and
+ * fills only the fields that kind uses, so the chat can render any section it is
+ * handed without knowing what the section is about.
+ */
+export interface DetailSection {
+  section_id: string;
+  title: string;
+  kind: 'stats' | 'keyvalue' | 'table' | 'list' | 'group';
+  summary?: string;
+  stats?: DetailStat[];
+  pairs?: [string, string][];
+  columns?: string[];
+  rows?: string[][];
+  total_rows?: number;
+  items?: string[];
+  children?: DetailSection[];
+}
+
 export interface AIResponse {
   answer: string;
   is_ambiguous: boolean;
@@ -149,6 +269,8 @@ export interface AIResponse {
   query_plan?: PlanStep[];
   source_independence?: SourceIndependence;
   visual_actions?: HighlightAction;
+  detail_sections?: DetailSection[];
+  detail_stats?: Record<string, number> | null;
 }
 
 export interface OSINTRecord {

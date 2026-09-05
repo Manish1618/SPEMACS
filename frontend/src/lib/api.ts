@@ -88,12 +88,52 @@ export const api = {
   },
 
   // Universal AI Investigator
-  async investigate(caseId: string, query: string, history: any[] = []) {
+  // detailLevel 'full' keeps the focused answer and attaches the complete case
+  // record set to the same reply.
+  async investigate(
+    caseId: string,
+    query: string,
+    history: any[] = [],
+    detailLevel: 'standard' | 'full' = 'standard'
+  ) {
     const res = await fetch(`${API_BASE}/ai/investigate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ case_id: caseId, query, history })
+      body: JSON.stringify({ case_id: caseId, query, history, detail_level: detailLevel })
     });
+    return res.json();
+  },
+  async getFullBrief(caseId: string) {
+    const res = await fetch(`${API_BASE}/ai/full-brief?case_id=${encodeURIComponent(caseId)}`);
+    return res.json();
+  },
+  async getEntityDossier(caseId: string, entityId: string) {
+    const res = await fetch(
+      `${API_BASE}/ai/entity-dossier?case_id=${encodeURIComponent(caseId)}&entity_id=${encodeURIComponent(entityId)}`
+    );
+    return res.json();
+  },
+  async getHypotheses(caseId: string) {
+    const res = await fetch(`${API_BASE}/ai/hypotheses?case_id=${encodeURIComponent(caseId)}`);
+    return res.json();
+  },
+
+  // Cross-Case Intelligence Engine
+  async getCrossCaseAnalysis(caseId: string, minConfidence = 0, bases: string[] = []) {
+    const params = new URLSearchParams({ case_id: caseId });
+    if (minConfidence > 0) params.append('min_confidence', String(minConfidence));
+    bases.forEach(b => params.append('basis', b));
+    const res = await fetch(`${API_BASE}/cross-case/analyse?${params.toString()}`);
+    return res.json();
+  },
+  async getCrossCaseLink(caseId: string, linkId: string) {
+    const res = await fetch(
+      `${API_BASE}/cross-case/link/${encodeURIComponent(linkId)}?case_id=${encodeURIComponent(caseId)}`
+    );
+    return res.json();
+  },
+  async getCrossCaseBases() {
+    const res = await fetch(`${API_BASE}/cross-case/bases`);
     return res.json();
   },
 

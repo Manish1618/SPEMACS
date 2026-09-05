@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.models.database import engine, Base, SessionLocal
 from app.services.ingestion import seed_database_and_graph
-from app.api import auth, cases, graph, map_timeline, evidence, ai, osint, ingestion
+from app.api import auth, cases, graph, map_timeline, evidence, ai, osint, ingestion, cross_case
 
 # Create DB Tables
 Base.metadata.create_all(bind=engine)
@@ -32,6 +32,7 @@ app.include_router(evidence.router, prefix=settings.API_V1_STR)
 app.include_router(ai.router, prefix=settings.API_V1_STR)
 app.include_router(osint.router, prefix=settings.API_V1_STR)
 app.include_router(ingestion.router, prefix=settings.API_V1_STR)
+app.include_router(cross_case.router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 def startup_event():

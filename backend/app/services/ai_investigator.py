@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.services.graph_engine import knowledge_graph
 from app.services.query_planner import query_planner
+from app.services.case_briefing import case_briefing
 from app.models.entities import Document, Evidence, Case
 from app.core.config import settings
 
@@ -17,15 +18,27 @@ class UniversalAIInvestigator:
         db: Session,
         case_id: str,
         query: str,
-        history: Optional[List[Dict[str, str]]] = None
+        history: Optional[List[Dict[str, str]]] = None,
+        detail_level: str = "standard",
+        ctx: Optional[Any] = None
     ) -> Dict[str, Any]:
         """Routes investigator questions through the Dynamic Investigation Query Planner."""
         return query_planner.plan_and_execute(
             db=db,
             case_id=case_id,
             query=query,
-            history=history
+            history=history,
+            detail_level=detail_level,
+            ctx=ctx
         )
+
+    def full_brief(self, db: Session, case_id: str) -> Dict[str, Any]:
+        """The complete case file, without needing a question to trigger it."""
+        return case_briefing.build_full_brief(db, case_id)
+
+    def entity_dossier(self, db: Session, case_id: str, entity_id: str) -> Optional[Dict[str, Any]]:
+        """Everything on file about one subject."""
+        return case_briefing.build_entity_dossier(db, case_id, entity_id)
 
     def generate_hypotheses(self, case_id: str) -> List[Dict[str, Any]]:
         return [

@@ -152,6 +152,9 @@ class AIInvestigateRequest(BaseModel):
     case_id: str
     query: str
     history: List[Dict[str, str]] = [] # [{"role": "user", "content": "..."}, ...]
+    # "standard" answers the question; "full" also attaches the complete record set
+    # (entity roster, chronology, evidence register, analytics) to the same reply.
+    detail_level: str = "standard"
 
 class Citation(BaseModel):
     evidence_id: str
@@ -181,6 +184,10 @@ class AIInvestigateResponse(BaseModel):
     query_plan: Optional[List[Dict[str, Any]]] = None
     source_independence: Optional[Dict[str, Any]] = None
     visual_actions: Optional[HighlightAction] = None
+    # Expandable full-detail blocks rendered inline in the chat. Each carries a
+    # kind (stats, table, keyvalue, list, group) the UI knows how to draw.
+    detail_sections: List[Dict[str, Any]] = []
+    detail_stats: Optional[Dict[str, Any]] = None
 
 # --- OSINT Schemas ---
 class OSINTEvaluationRequest(BaseModel):

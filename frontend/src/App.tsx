@@ -14,11 +14,14 @@ import { EntityResolutionModal } from './components/resolution/EntityResolutionM
 import type { Case, GraphData, MapEvent, TimelineEvent, GraphNode, HighlightAction, EvidenceItem } from './types';
 import { api } from './lib/api';
 
+import { Sparkles, X } from 'lucide-react';
+
 export const App: React.FC = () => {
   const [cases, setCases] = useState<Case[]>([]);
   const [activeCaseId, setActiveCaseId] = useState<string>('CASE-2024-8812');
   const [activeTab, setActiveTab] = useState<string>('workspace');
   const [isReseeding, setIsReseeding] = useState<boolean>(false);
+  const [isCopilotDrawerOpen, setIsCopilotDrawerOpen] = useState<boolean>(false);
 
   // Synchronized Workspace State
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [], stats: { total_nodes: 0, total_edges: 0, hubs_count: 0, bridges_count: 0 } });
@@ -131,7 +134,10 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleTriggerVisualHighlight = (action: HighlightAction) => {
+  const handleTriggerVisualHighlight = (
+    action: HighlightAction,
+    options?: { navigate?: boolean }
+  ) => {
     if (action.node_ids && action.node_ids.length > 0) {
       setHighlightedNodeIds(action.node_ids);
       setSelectedNodeId(action.node_ids[0]);
@@ -142,7 +148,12 @@ export const App: React.FC = () => {
     if (action.event_ids && action.event_ids.length > 0) {
       setSelectedEventId(action.event_ids[0]);
     }
-    setActiveTab('workspace');
+    // Highlights apply silently; only an explicit "focus" click moves the user to
+    // the workspace. Jumping on every answer used to yank the investigator away
+    // from the reply they just asked for.
+    if (options?.navigate !== false) {
+      setActiveTab('workspace');
+    }
   };
 
   const currentCase = cases.find(c => c.case_id === activeCaseId) || {
@@ -174,7 +185,7 @@ export const App: React.FC = () => {
       {/* Main Workspace Body */}
       <main className="flex-1 overflow-hidden p-3">
         {activeTab === 'workspace' && (
-          <div className="h-full flex flex-col space-y-3">
+          <div className="h-full flex flex-col space-y-3 relative">
             {/* Top Tri-View Split: Network Graph (Left) & Actual Map (Right) */}
             <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
               {/* Left Column: Cytoscape Network Graph (60%) */}
@@ -210,23 +221,65 @@ export const App: React.FC = () => {
                 onTimeFilterChange={setActiveTimeFilter}
               />
             </div>
+
+            {/* Floating Live AI Copilot Launcher Button */}
+            <button
+              onClick={() => setIsCopilotDrawerOpen(!isCopilotDrawerOpen)}
+              className="absolute bottom-48 right-4 z-30 flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-3.5 py-2 rounded-full shadow-2xl border border-indigo-400/40 text-xs font-bold transition-all transform hover:scale-105"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse text-amber-300" />
+              <span>{isCopilotDrawerOpen ? 'Hide Live Copilot' : 'AI Copilot (Live Network Sync)'}</span>
+            </button>
+
+            {/* Embedded Live Copilot Slide-Over Drawer */}
+            {isCopilotDrawerOpen && (
+              <div className="absolute top-0 right-0 w-[450px] h-full z-40 bg-dark-950/95 backdrop-blur-md border-l border-indigo-500/40 shadow-2xl rounded-r-xl flex flex-col transition-all">
+                <div className="p-3 bg-dark-900/90 border-b border-gray-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                    <span className="text-xs font-bold text-white">Live Investigation Copilot</span>
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">
+                      Real-Time Sync
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsCopilotDrawerOpen(false)}
+                    className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden p-2">
+                  <UniversalAIInvestigator
+                    activeCaseId={activeCaseId}
+                    onTriggerVisualHighlight={handleTriggerVisualHighlight}
+                    onOpenDocumentViewer={() => setIsDocViewerOpen(true)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {activeTab === 'ai' && (
+        {/* Kept mounted so the investigation transcript survives a trip to the
+            workspace and back - a full brief is worth returning to. */}
+        <div className={activeTab === 'ai' ? 'h-full' : 'hidden'}>
           <UniversalAIInvestigator
             activeCaseId={activeCaseId}
             onTriggerVisualHighlight={handleTriggerVisualHighlight}
             onOpenDocumentViewer={() => setIsDocViewerOpen(true)}
           />
-        )}
+        </div>
 
         {activeTab === 'evidence' && (
           <EvidenceVault activeCaseId={activeCaseId} />
         )}
 
         {activeTab === 'analytics' && (
-          <AnalyticsPanel activeCaseId={activeCaseId} />
+          <AnalyticsPanel
+            activeCaseId={activeCaseId}
+            onTriggerVisualHighlight={handleTriggerVisualHighlight}
+          />
         )}
 
         {activeTab === 'ingestion' && (
