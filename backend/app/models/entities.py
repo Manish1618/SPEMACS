@@ -113,3 +113,124 @@ class AuditLog(Base):
     ip_address = Column(String(45), default="127.0.0.1")
     details = Column(JSON, default=dict)
     timestamp = Column(DateTime, default=get_utc_now)
+
+
+# ---------------------------------------------------------------------------
+# Investigative domain model.
+#
+# Entities, relationships and events were previously Python literals inside
+# ingestion.py / map_timeline.py, which made them unqueryable. They are first
+# class rows now so the Copilot's planner has something to actually plan over.
+# ---------------------------------------------------------------------------
+
+class Entity(Base):
+    __tablename__ = "entities"
+
+    entity_id = Column(String(64), primary_key=True, index=True)
+    case_id = Column(String(64), index=True, nullable=False)
+    label = Column(String(255), nullable=False, index=True)
+    entity_type = Column(String(32), nullable=False, index=True)  # PERSON, PHONE, VEHICLE, ORGANIZATION, LOCATION, ACCOUNT, CASE
+    aliases = Column(JSON, default=list)
+    properties = Column(JSON, default=dict)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    # Entity resolution: when a duplicate is merged, canonical_id points at the survivor.
+    canonical_id = Column(String(64), nullable=True, index=True)
+    merge_confidence = Column(Float, nullable=True)
+    merged_by = Column(String(100), nullable=True)
+    first_seen = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now)
+
+
+class Relationship(Base):
+    __tablename__ = "relationships"
+
+    rel_id = Column(String(64), primary_key=True, index=True)
+    case_id = Column(String(64), index=True, nullable=False)
+    source_id = Column(String(64), ForeignKey("entities.entity_id"), nullable=False, index=True)
+    target_id = Column(String(64), ForeignKey("entities.entity_id"), nullable=False, index=True)
+    rel_type = Column(String(48), nullable=False, index=True)
+    confidence = Column(Float, default=1.0)
+    # OBSERVED = directly recorded in a source. INFERRED = derived analytically.
+    # Section 29 of the spec: never present an inference as an established fact.
+    assertion_kind = Column(String(24), default="OBSERVED")
+    evidence_ids = Column(JSON, default=list)
+    # valid_from is what makes "relationships that appeared AFTER event X" answerable.
+    valid_from = Column(DateTime, nullable=True, index=True)
+    valid_to = Column(DateTime, nullable=True)
+    properties = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=get_utc_now)
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    event_id = Column(String(64), primary_key=True, index=True)
+    case_id = Column(String(64), index=True, nullable=False)
+    title = Column(String(255), nullable=False)
+    event_type = Column(String(48), nullable=False, index=True)  # CALL, TRANSACTION, MEETING, VEHICLE_SIGHTING, OSINT_PUBLICATION, EVIDENCE_REGISTERED
+    timestamp = Column(DateTime, nullable=False, index=True)
+    location_name = Column(String(255), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    related_entities = Column(JSON, default=list)
+    evidence_id = Column(String(64), nullable=True, index=True)
+    summary = Column(Text, default="")
+    confidence = Column(Float, default=1.0)
+    properties = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=get_utc_now)
+
+
+class Hypothesis(Base):
+    __tablename__ = "hypotheses"
+
+    hypothesis_id = Column(String(64), primary_key=True, index=True)
+    case_id = Column(String(64), index=True, nullable=False)
+    title = Column(String(255), nullable=False)
+    statement = Column(Text, nullable=False)
+    # OPEN, UNDER_REVIEW, SUPPORTED, DISPUTED, DISMISSED, RESOLVED
+    status = Column(String(24), default="OPEN")
+    created_by = Column(String(100), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now)
+    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+
+class OsintRecord(Base):
+    __tablename__ = "osint_records"
+
+    record_id = Column(String(64), primary_key=True, index=True)
+    case_id = Column(String(64), index=True, nullable=False)
+    entity_id = Column(String(64), nullable=True, index=True)
+    query_term = Column(String(255), nullable=False)
+    source_name = Column(String(255), nullable=False)
+    source_url = Column(Text, nullable=False)
+    source_type = Column(String(48), default="NEWS")  # NEWS, CORPORATE_REGISTRY, COURT_RECORD, GOVERNMENT, AGGREGATOR
+    published_at = Column(DateTime, nullable=True)
+    retrieved_at = Column(DateTime, default=get_utc_now)
+    reliability = Column(Float, default=0.5)
+    confidence = Column(Float, default=0.5)
+    claims = Column(JSON, default=list)
+    content_hash = Column(String(64), nullable=False)
+    # Source-independence analysis (spec section 16): if this report derives from
+    # another, origin_record_id names the upstream original.
+    origin_record_id = Column(String(64), nullable=True, index=True)
+    is_derivative = Column(Boolean, default=False)
+    requires_human_verification = Column(Boolean, default=True)
+    evidence_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=get_utc_now)
+
+
+class LedgerBlock(Base):
+    """Permissioned append-only ledger. Each block hash-chains to its predecessor,
+    so altering any historic custody record invalidates every block after it."""
+
+    __tablename__ = "ledger_blocks"
+
+    block_number = Column(Integer, primary_key=True, autoincrement=False)
+    previous_hash = Column(String(64), nullable=False)
+    payload = Column(JSON, nullable=False)
+    payload_hash = Column(String(64), nullable=False)
+    block_hash = Column(String(64), nullable=False, index=True)
+    sealed_by = Column(String(100), nullable=False)
+    timestamp = Column(DateTime, default=get_utc_now)

@@ -1,0 +1,12 @@
+PUBLIC SOURCE RECORD OSINT-0010
+Source: Regional news archive (synthetic)
+Reference: https://example-news.invalid/archive/logistics-conference-2022
+Source type: NEWS
+Published: 2022-05-18T00:00:00
+Assessed reliability: 0.6
+Reported by 0 further outlets carrying the same text.
+
+Extracted claims:
+  - A person named Vikram Malhotra is quoted in a conference report on freight corridors.
+
+Potential external match. Human verification required.

@@ -107,6 +107,12 @@ class TemporalKnowledgeGraph:
         matches.sort(key=lambda x: x["confidence"], reverse=True)
         return matches
 
+    def get_case_subgraph(self, case_id: str) -> Dict[str, Any]:
+        nodes = {n for n, d in self.graph.nodes(data=True) if d.get("case_id") == case_id}
+        if not nodes:
+            nodes = set(self.graph.nodes())
+        return self._build_subgraph_response(nodes)
+
     def get_k_hop_neighborhood(self, entity_id: str, k: int = 2) -> Dict[str, Any]:
         if entity_id not in self.graph:
             return {"nodes": [], "edges": []}

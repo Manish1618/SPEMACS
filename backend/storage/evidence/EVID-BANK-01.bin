@@ -1,0 +1,5 @@
+BANK LEDGER EXTRACT, FEBRUARY 2024
+Records: 2
+
+EVT-TX-0001 | 2024-02-11T10:00:00 | Transfer of USD 50,000 from Zenith Holdings to Apex Global Logistics | Synthetic Metro National Bank, New Delhi | amount_usd=50000 reference=TX-9871
+EVT-TX-0002 | 2024-02-15T09:15:00 | Wire transfer of USD 250,000 to Alpine Holdings AG, Zurich | Synthetic Metro National Bank, New Delhi | amount_usd=250000 beneficiary_country=Switzerland reference=TX-9902

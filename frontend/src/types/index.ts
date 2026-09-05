@@ -118,6 +118,20 @@ export interface HighlightAction {
   description: string;
 }
 
+export interface PlanStep {
+  step: number;
+  action: string;
+  description: string;
+  status: string;
+}
+
+export interface SourceIndependence {
+  reported_sources_count: number;
+  independent_sources_count: number;
+  derivative_sources_count: number;
+  primary_origin: string;
+}
+
 export interface AIResponse {
   answer: string;
   is_ambiguous: boolean;
@@ -132,6 +146,8 @@ export interface AIResponse {
   suggested_next_steps: string[];
   confidence_level: string;
   confidence_score: number;
+  query_plan?: PlanStep[];
+  source_independence?: SourceIndependence;
   visual_actions?: HighlightAction;
 }
 

@@ -1,0 +1,12 @@
+PUBLIC SOURCE RECORD OSINT-0001
+Source: Zurich Commercial Register (synthetic mirror)
+Reference: https://example-registry.invalid/zurich/alpine-holdings-ag
+Source type: CORPORATE_REGISTRY
+Published: 2021-09-28T00:00:00
+Assessed reliability: 0.92
+Reported by 0 further outlets carrying the same text.
+
+Extracted claims:
+  - Alpine Holdings AG was incorporated on 28 September 2021.
+  - The registered purpose is stated as the holding of participations in trading companies.
+  - One nominee director is listed. No beneficial owner is disclosed in the public extract.

@@ -1,0 +1,710 @@
+[
+  {
+    "rel_id": "R-PH-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-PH-01",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-02",
+    "target_id": "ENT-PH-02",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-03",
+    "target_id": "ENT-PH-03",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-04",
+    "target_id": "ENT-PH-04",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-05",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-05",
+    "target_id": "ENT-PH-05",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-06",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-06",
+    "target_id": "ENT-PH-06",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-07",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-07",
+    "target_id": "ENT-PH-07",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-PH-08",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-08",
+    "target_id": "ENT-PH-08",
+    "rel_type": "USED",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-EMP-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-ORG-01",
+    "rel_type": "WORKS_FOR",
+    "confidence": 0.98,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2019-06-11T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-EMP-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-02",
+    "target_id": "ENT-ORG-02",
+    "rel_type": "WORKS_FOR",
+    "confidence": 0.98,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2016-02-03T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-EMP-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-05",
+    "target_id": "ENT-ORG-01",
+    "rel_type": "WORKS_FOR",
+    "confidence": 0.95,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-WITNESS-01"
+    ],
+    "valid_from": "2021-03-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-EMP-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-09",
+    "target_id": "ENT-ORG-05",
+    "rel_type": "WORKS_FOR",
+    "confidence": 0.9,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-OSINT-REGISTRY-01"
+    ],
+    "valid_from": "2022-01-17T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-EMP-05",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-PER-10",
+    "target_id": "ENT-ORG-04",
+    "rel_type": "WORKS_FOR",
+    "confidence": 0.92,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-ARCHIVE-01"
+    ],
+    "valid_from": "2014-04-22T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CTL-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-01",
+    "target_id": "ENT-ACC-01",
+    "rel_type": "CONTROLS",
+    "confidence": 0.99,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-01"
+    ],
+    "valid_from": "2019-06-11T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CTL-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-02",
+    "target_id": "ENT-ACC-02",
+    "rel_type": "CONTROLS",
+    "confidence": 0.99,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-01"
+    ],
+    "valid_from": "2016-02-03T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CTL-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-03",
+    "target_id": "ENT-ACC-03",
+    "rel_type": "CONTROLS",
+    "confidence": 0.93,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-01"
+    ],
+    "valid_from": "2021-09-28T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CTL-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-05",
+    "target_id": "ENT-ACC-04",
+    "rel_type": "CONTROLS",
+    "confidence": 0.88,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-02"
+    ],
+    "valid_from": "2022-01-17T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CTL-05",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-ORG-04",
+    "target_id": "ENT-ACC-05",
+    "rel_type": "CONTROLS",
+    "confidence": 0.9,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-ARCHIVE-01"
+    ],
+    "valid_from": "2014-04-22T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-VEH-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-VEH-01",
+    "rel_type": "USED",
+    "confidence": 0.94,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-TOLL-01",
+      "EVID-CCTV-01"
+    ],
+    "valid_from": "2024-01-04T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-VEH-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-01",
+    "target_id": "ENT-VEH-01",
+    "rel_type": "OWNED",
+    "confidence": 0.99,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2021-08-19T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-VEH-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-03",
+    "target_id": "ENT-VEH-03",
+    "rel_type": "OWNED",
+    "confidence": 0.96,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-TOLL-01"
+    ],
+    "valid_from": "2022-11-02T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-VEH-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-05",
+    "target_id": "ENT-VEH-01",
+    "rel_type": "DROVE",
+    "confidence": 0.91,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-WITNESS-01"
+    ],
+    "valid_from": "2024-01-04T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-ASC-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-PER-02",
+    "rel_type": "ASSOCIATED_WITH",
+    "confidence": 0.93,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01",
+      "EVID-CCTV-01"
+    ],
+    "valid_from": "2023-11-14T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-ASC-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-PER-03",
+    "rel_type": "ASSOCIATED_WITH",
+    "confidence": 0.88,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2023-12-02T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-ASC-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-03",
+    "target_id": "ENT-PER-04",
+    "rel_type": "ASSOCIATED_WITH",
+    "confidence": 0.81,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-01-09T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-ASC-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-PER-05",
+    "rel_type": "ASSOCIATED_WITH",
+    "confidence": 0.95,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-WITNESS-01"
+    ],
+    "valid_from": "2021-03-01T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-NEW-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-02",
+    "target_id": "ENT-PER-06",
+    "rel_type": "COMMUNICATED_WITH",
+    "confidence": 0.87,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-02-16T10:12:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-NEW-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-PER-07",
+    "rel_type": "COMMUNICATED_WITH",
+    "confidence": 0.89,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-02-17T11:48:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-NEW-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-03",
+    "target_id": "ENT-PER-08",
+    "rel_type": "COMMUNICATED_WITH",
+    "confidence": 0.84,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-02-19T09:05:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-NEW-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-02",
+    "target_id": "ENT-ORG-05",
+    "rel_type": "TRANSFERRED_TO",
+    "confidence": 0.9,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-02"
+    ],
+    "valid_from": "2024-02-21T14:30:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-NEW-05",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-06",
+    "target_id": "ENT-ORG-05",
+    "rel_type": "WORKS_FOR",
+    "confidence": 0.72,
+    "assertion_kind": "INFERRED",
+    "evidence_ids": [
+      "EVID-OSINT-REGISTRY-01"
+    ],
+    "valid_from": "2024-02-22T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-FIN-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ACC-01",
+    "target_id": "ENT-ACC-02",
+    "rel_type": "TRANSFERRED_TO",
+    "confidence": 0.99,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-01"
+    ],
+    "valid_from": "2024-02-11T10:00:00Z",
+    "properties": {
+      "amount_usd": 50000
+    }
+  },
+  {
+    "rel_id": "R-FIN-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ACC-02",
+    "target_id": "ENT-ACC-03",
+    "rel_type": "TRANSFERRED_TO",
+    "confidence": 0.99,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-01"
+    ],
+    "valid_from": "2024-02-15T09:15:00Z",
+    "properties": {
+      "amount_usd": 250000
+    }
+  },
+  {
+    "rel_id": "R-FIN-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ACC-02",
+    "target_id": "ENT-ACC-04",
+    "rel_type": "TRANSFERRED_TO",
+    "confidence": 0.97,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-BANK-02"
+    ],
+    "valid_from": "2024-02-21T14:30:00Z",
+    "properties": {
+      "amount_usd": 180000
+    }
+  },
+  {
+    "rel_id": "R-LOC-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-ORG-01",
+    "target_id": "ENT-LOC-07",
+    "rel_type": "LOCATED_AT",
+    "confidence": 0.99,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2019-06-11T00:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-LOC-02",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-PER-01",
+    "target_id": "ENT-LOC-03",
+    "rel_type": "RECORDED_AT",
+    "confidence": 0.94,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-ARCHIVE-01"
+    ],
+    "valid_from": "2023-08-20T14:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-LOC-03",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-PER-08",
+    "target_id": "ENT-LOC-03",
+    "rel_type": "RECORDED_AT",
+    "confidence": 0.92,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-ARCHIVE-01"
+    ],
+    "valid_from": "2023-08-14T09:20:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-01",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-01",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-02",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-02",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-03",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-03",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-04",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-05",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-05",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-06",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-06",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-07",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-07",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-08",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-08",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-CASE-09",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-09",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 1.0,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-FIR-01"
+    ],
+    "valid_from": "2024-02-18T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-XCASE-01",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-PER-01",
+    "target_id": "CASE-2023-1104",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 0.95,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-ARCHIVE-01"
+    ],
+    "valid_from": "2023-08-02T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-XCASE-02",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-PER-08",
+    "target_id": "CASE-2023-1104",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 0.93,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-ARCHIVE-01"
+    ],
+    "valid_from": "2023-08-02T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-XCASE-03",
+    "case_id": "CASE-2023-1104",
+    "source_id": "ENT-PER-10",
+    "target_id": "CASE-2023-1104",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 0.9,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-DOC-ARCHIVE-01"
+    ],
+    "valid_from": "2023-08-02T09:00:00Z",
+    "properties": {}
+  },
+  {
+    "rel_id": "R-XCASE-04",
+    "case_id": "CASE-2024-8812",
+    "source_id": "ENT-PER-08",
+    "target_id": "CASE-2024-8812",
+    "rel_type": "INVOLVED_IN",
+    "confidence": 0.84,
+    "assertion_kind": "OBSERVED",
+    "evidence_ids": [
+      "EVID-CDR-01"
+    ],
+    "valid_from": "2024-02-19T09:05:00Z",
+    "properties": {}
+  }
+]

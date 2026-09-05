@@ -1,0 +1,32 @@
+{
+  "source_path": "C:/Users/ROG/OneDrive/Documents/Spemacs/PRD.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Product Requirements Document (PRD) - Secure Pattern & Evidence Mapping and Analysis of Suspicious Structures (SPEMASS)",
+  "summary": "Requirements for SPEMASS, an AI-powered investigative decision-support platform unifying knowledge graph, map, timeline, and evidence integrity engine.",
+  "scope": [
+    "SPEMASS",
+    "Temporal Knowledge Graph (Neo4j)",
+    "Interactive Map (MapLibre GL / Leaflet)",
+    "Event Chronology Timeline",
+    "Evidence Integrity Engine (SHA-256 + Blockchain)",
+    "Universal AI Investigator (GraphRAG)",
+    "case ingestion",
+    "OCR and entity extraction",
+    "alias resolution",
+    "OSINT enrichment",
+    "chain of custody",
+    "contradiction and gap detection",
+    "pgvector document chunks",
+    "MVP functional requirements",
+    "non-functional requirements",
+    "UI screens",
+    "API endpoints",
+    "UAT scenarios"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 1,
+  "notes": ""
+}

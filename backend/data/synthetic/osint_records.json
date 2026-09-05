@@ -1,33 +1,195 @@
 [
   {
-    "entity_name": "Vikram Malhotra",
-    "aliases": ["Vicky", "V. Malhotra"],
-    "source_name": "Ministry of Corporate Affairs (MCA) Public Registry",
-    "source_url": "https://mca.gov.in/public/company-master/zenith-holdings",
-    "reliability_score": 0.95,
-    "confidence": 0.96,
-    "extracted_claims": "Director of Zenith Holdings Pvt Ltd (CIN: U74999DL2018PTC334412). Registered office in Connaught Place, New Delhi. Company flagged for dormant tax filing.",
-    "is_potential_match": false
+    "record_id": "OSINT-0001",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Zurich Commercial Register (synthetic mirror)",
+    "source_url": "https://example-registry.invalid/zurich/alpine-holdings-ag",
+    "source_type": "CORPORATE_REGISTRY",
+    "published_at": "2021-09-28T00:00:00Z",
+    "reliability": 0.92,
+    "confidence": 0.9,
+    "claims": [
+      "Alpine Holdings AG was incorporated on 28 September 2021.",
+      "The registered purpose is stated as the holding of participations in trading companies.",
+      "One nominee director is listed. No beneficial owner is disclosed in the public extract."
+    ],
+    "origin_record_id": null,
+    "requires_human_verification": false
   },
   {
-    "entity_name": "Amit Shahani",
-    "aliases": ["A. Shahani"],
-    "source_name": "OpenCorporates Global Registry",
-    "source_url": "https://opencorporates.com/companies/in/apex-logistics",
-    "reliability_score": 0.90,
-    "confidence": 0.92,
-    "extracted_claims": "Managing Partner at Apex Global Logistics. Linked to cross-border shipping consignments from Nhava Sheva Mumbai Port to Jebel Ali, UAE.",
-    "is_potential_match": false
-  },
-  {
-    "entity_name": "Rahul Sharma",
-    "aliases": ["Rahul S."],
-    "source_name": "Public Social Media & Phone Directory Index",
-    "source_url": "https://public-telecom-index.in/lookup/+919871144553",
-    "reliability_score": 0.65,
+    "record_id": "OSINT-0002",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Handelsblatt Regional (synthetic)",
+    "source_url": "https://example-news.invalid/original/alpine-holdings-shell-report",
+    "source_type": "NEWS",
+    "published_at": "2023-11-04T08:00:00Z",
+    "reliability": 0.78,
     "confidence": 0.72,
-    "extracted_claims": "Phone number +919871144553 tagged as 'Rahul Sharma Logistics Courier'. Note: Multiple public profiles with this name exist.",
-    "is_potential_match": true,
-    "verification_warning": "Potential Match — Human Verification Required"
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": null,
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0003",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Business Wire Asia (synthetic)",
+    "source_url": "https://example-wire.invalid/asia/alpine-holdings",
+    "source_type": "AGGREGATOR",
+    "published_at": "2023-11-08T09:00:00Z",
+    "reliability": 0.45,
+    "confidence": 0.4,
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": "OSINT-0002",
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0004",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Delhi Financial Daily (synthetic)",
+    "source_url": "https://example-daily.invalid/finance/alpine-holdings",
+    "source_type": "AGGREGATOR",
+    "published_at": "2023-11-09T09:00:00Z",
+    "reliability": 0.45,
+    "confidence": 0.4,
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": "OSINT-0002",
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0005",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Trade Compliance Weekly (synthetic)",
+    "source_url": "https://example-weekly.invalid/alpine-holdings",
+    "source_type": "AGGREGATOR",
+    "published_at": "2023-11-10T09:00:00Z",
+    "reliability": 0.45,
+    "confidence": 0.4,
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": "OSINT-0002",
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0006",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Global Shell Watch (synthetic)",
+    "source_url": "https://example-watch.invalid/posts/alpine-holdings",
+    "source_type": "AGGREGATOR",
+    "published_at": "2023-11-11T09:00:00Z",
+    "reliability": 0.45,
+    "confidence": 0.4,
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": "OSINT-0002",
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0007",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Mumbai Business Post (synthetic)",
+    "source_url": "https://example-post.invalid/biz/alpine-holdings",
+    "source_type": "AGGREGATOR",
+    "published_at": "2023-11-12T09:00:00Z",
+    "reliability": 0.45,
+    "confidence": 0.4,
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": "OSINT-0002",
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0008",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-03",
+    "query_term": "Alpine Holdings AG",
+    "source_name": "Corporate Risk Digest (synthetic)",
+    "source_url": "https://example-digest.invalid/alpine-holdings",
+    "source_type": "AGGREGATOR",
+    "published_at": "2023-11-13T09:00:00Z",
+    "reliability": 0.45,
+    "confidence": 0.4,
+    "claims": [
+      "An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director."
+    ],
+    "origin_record_id": "OSINT-0002",
+    "requires_human_verification": true
+  },
+  {
+    "record_id": "OSINT-0009",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-02",
+    "query_term": "Apex Global Logistics",
+    "source_name": "Ministry of Corporate Affairs extract (synthetic mirror)",
+    "source_url": "https://example-registry.invalid/in/apex-global-logistics",
+    "source_type": "CORPORATE_REGISTRY",
+    "published_at": "2016-02-03T00:00:00Z",
+    "reliability": 0.94,
+    "confidence": 0.92,
+    "claims": [
+      "Apex Global Logistics is an active company incorporated on 3 February 2016.",
+      "Its filed principal activity is freight forwarding.",
+      "No regulatory sanction is recorded against the company in the public extract."
+    ],
+    "origin_record_id": null,
+    "requires_human_verification": false
+  },
+  {
+    "record_id": "OSINT-0010",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-PER-01",
+    "query_term": "Vikram Malhotra",
+    "source_name": "Regional news archive (synthetic)",
+    "source_url": "https://example-news.invalid/archive/logistics-conference-2022",
+    "source_type": "NEWS",
+    "published_at": "2022-05-18T00:00:00Z",
+    "reliability": 0.6,
+    "confidence": 0.35,
+    "claims": [
+      "A person named Vikram Malhotra is quoted in a conference report on freight corridors."
+    ],
+    "origin_record_id": null,
+    "requires_human_verification": true,
+    "verification_note": "Name match only. Vikram Malhotra is a common name and the report carries no identifier tying it to the subject of this case. Potential external match, human verification required."
+  },
+  {
+    "record_id": "OSINT-0011",
+    "case_id": "CASE-2024-8812",
+    "entity_id": "ENT-ORG-05",
+    "query_term": "Meridian Trade FZE",
+    "source_name": "Free zone registry extract (synthetic mirror)",
+    "source_url": "https://example-registry.invalid/fze/meridian-trade",
+    "source_type": "CORPORATE_REGISTRY",
+    "published_at": "2022-01-17T00:00:00Z",
+    "reliability": 0.85,
+    "confidence": 0.8,
+    "claims": [
+      "Meridian Trade FZE was registered on 17 January 2022.",
+      "A director is recorded under the name Neha Kapoor."
+    ],
+    "origin_record_id": null,
+    "requires_human_verification": true
   }
 ]

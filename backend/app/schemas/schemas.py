@@ -178,6 +178,8 @@ class AIInvestigateResponse(BaseModel):
     suggested_next_steps: List[str] = []
     confidence_level: str # HIGH, MEDIUM, LOW, INSUFFICIENT_DATA
     confidence_score: float = 0.95
+    query_plan: Optional[List[Dict[str, Any]]] = None
+    source_independence: Optional[Dict[str, Any]] = None
     visual_actions: Optional[HighlightAction] = None
 
 # --- OSINT Schemas ---
@@ -197,3 +199,86 @@ class OSINTExtractedRecord(BaseModel):
     is_potential_match: bool
     verification_warning: Optional[str] = None
     evidence_id: str
+
+# --- Copilot Schemas ---
+class CopilotQueryRequest(BaseModel):
+    case_id: str
+    question: str = Field(..., min_length=1, max_length=2000)
+    conversation_id: Optional[str] = None
+
+class CopilotCitation(BaseModel):
+    evidence_id: Optional[str] = None
+    document_id: Optional[str] = None
+    event_ids: List[str] = []
+    source_title: str = ""
+    supports: str = ""
+
+class PlanStepOut(BaseModel):
+    step: int
+    tool: str
+    arguments: Dict[str, Any] = {}
+    record_count: int = 0
+    outcome: str = ""
+
+class CopilotResponse(BaseModel):
+    answer: str
+    confidence: str
+    confidence_reason: str = ""
+    requires_clarification: bool = False
+    clarification_options: List[str] = []
+    citations: List[CopilotCitation] = []
+    contradictions: List[Dict[str, Any]] = []
+    limitations: List[str] = []
+    next_steps: List[str] = []
+    entities: List[str] = []
+    visual_actions: List[Dict[str, Any]] = []
+    query_plan: List[PlanStepOut] = []
+    planner: str = ""
+    planner_note: str = ""
+    grounding: Dict[str, Any] = {}
+
+# --- Entity, relationship and event schemas ---
+class EntityOut(BaseModel):
+    entity_id: str
+    case_id: str
+    label: str
+    entity_type: str
+    aliases: List[str] = []
+    properties: Dict[str, Any] = {}
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+class HypothesisOut(BaseModel):
+    hypothesis_id: str
+    case_id: str
+    title: str
+    statement: str
+    status: str
+    created_by: str
+    notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class HypothesisCreate(BaseModel):
+    case_id: str
+    title: str
+    statement: str
+
+class HypothesisStatusUpdate(BaseModel):
+    status: str
+    notes: Optional[str] = None
+
+class LedgerBlockOut(BaseModel):
+    block_number: int
+    previous_hash: str
+    block_hash: str
+    payload: Dict[str, Any]
+    sealed_by: str
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True

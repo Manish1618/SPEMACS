@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Sparkles, CheckCircle, ShieldAlert, CornerDownRight, HelpCircle, Mic, MicOff, Lightbulb, Scale, ArrowRight } from 'lucide-react';
+import { Send, Sparkles, CheckCircle, ShieldAlert, CornerDownRight, HelpCircle, Mic, MicOff, Lightbulb, Scale, ArrowRight, ListTree, Globe2 } from 'lucide-react';
 import type { AIResponse, HighlightAction } from '../../types';
 import { api } from '../../lib/api';
 
@@ -23,7 +23,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hello Inspector. I am the **SPEMASS Universal AI Investigator** powered by Gemini 1.5 & the Case Temporal Knowledge Graph. I have real-time access to the case knowledge graph, scanned FIRs, CCTV transcripts, CDR tower telemetry, and bank transaction ledgers. How can I assist your investigation today?"
+      content: "Hello Inspector. I am the **SPEMASS Universal AI Investigator** powered by a **Dynamic Investigation Query Planner** and GraphRAG. I can plan and answer open-ended questions across the case knowledge graph, scanned FIRs, CCTV transcripts, CDR tower telemetry, bank ledgers, and authorized OSINT. Ask any question in your own words."
     }
   ]);
   const [inputQuery, setInputQuery] = useState('');
@@ -33,7 +33,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
   const [hypotheses, setHypotheses] = useState<any[]>([]);
 
   const sampleQueries = [
-    "What connects Vikram Malhotra to the $250k Swiss bank transfer on Feb 15?",
+    "Find unusual relationships that appeared after Person A met Person B and tell me whether any evidence connects them to this case.",
     "Where was Vikram on Feb 14 and is there any contradicting evidence?",
     "Show calls made by Rahul",
     "Are there any cross-case links to past operations?",
@@ -132,12 +132,12 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
           </div>
           <div>
             <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <span>Universal AI Investigator (Gemini 1.5 + GraphRAG)</span>
+              <span>Universal AI Investigator</span>
               <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono border border-indigo-500/30">
-                Grounding Active
+                Dynamic Query Planner Active
               </span>
             </h3>
-            <p className="text-[11px] text-gray-400">Strict citation enforcement & contradiction detection</p>
+            <p className="text-[11px] text-gray-400">Open-ended investigation reasoning & strict citation guardrails</p>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
               <button
                 key={i}
                 onClick={() => handleSend(sq)}
-                className="flex-shrink-0 text-xs bg-dark-800 hover:bg-gray-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-full border border-gray-700/70 transition-colors"
+                className="flex-shrink-0 text-xs bg-dark-800 hover:bg-gray-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-full border border-gray-700/70 transition-colors truncate max-w-xs"
               >
                 {sq}
               </button>
@@ -191,12 +191,31 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-xl p-4 text-xs leading-relaxed ${
+                  className={`max-w-[88%] rounded-xl p-4 text-xs leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-indigo-600 text-white rounded-tr-none shadow-md'
                       : 'bg-dark-800 border border-gray-700/70 text-gray-200 rounded-tl-none shadow-md'
                   }`}
                 >
+                  {/* Dynamic Query Plan Accordion Banner */}
+                  {msg.responseObj?.query_plan && msg.responseObj.query_plan.length > 0 && (
+                    <div className="mb-3 p-2.5 bg-indigo-950/40 border border-indigo-500/40 rounded-lg text-xs space-y-1.5">
+                      <div className="flex items-center space-x-1.5 font-bold text-indigo-300 text-[11px]">
+                        <ListTree className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Dynamic Execution Plan ({msg.responseObj.query_plan.length} Steps)</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-1 pt-1 font-mono text-[10px]">
+                        {msg.responseObj.query_plan.map((step, sIdx) => (
+                          <div key={sIdx} className="flex items-center space-x-2 text-gray-300">
+                            <span className="text-emerald-400 font-bold">✓ Step {step.step}:</span>
+                            <span className="text-amber-300 font-semibold">{step.action}</span>
+                            <span className="text-gray-400">➔ {step.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Answer Content */}
                   <div className="whitespace-pre-line prose prose-invert max-w-none text-xs">
                     {msg.content}
@@ -219,6 +238,33 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                             👉 {opt}
                           </button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Source Independence Analysis Card */}
+                  {msg.responseObj?.source_independence && (
+                    <div className="mt-3 p-3 bg-cyan-950/30 border border-cyan-500/40 rounded-lg text-xs space-y-2">
+                      <div className="flex items-center space-x-1.5 font-bold text-cyan-300 text-[11px]">
+                        <Globe2 className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Source Independence Analysis</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+                        <div className="p-1.5 bg-dark-900 rounded border border-gray-700">
+                          <div className="text-gray-400">Reported Mentions</div>
+                          <div className="text-sm font-bold text-white mt-0.5">{msg.responseObj.source_independence.reported_sources_count}</div>
+                        </div>
+                        <div className="p-1.5 bg-dark-900 rounded border border-emerald-500/40">
+                          <div className="text-emerald-400 font-bold">Likely Independent</div>
+                          <div className="text-sm font-bold text-emerald-300 mt-0.5">{msg.responseObj.source_independence.independent_sources_count}</div>
+                        </div>
+                        <div className="p-1.5 bg-dark-900 rounded border border-amber-500/40">
+                          <div className="text-amber-400 font-bold">Derivative Replicas</div>
+                          <div className="text-sm font-bold text-amber-300 mt-0.5">{msg.responseObj.source_independence.derivative_sources_count}</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-gray-400 font-mono">
+                        Primary Origin: <span className="text-gray-200">{msg.responseObj.source_independence.primary_origin}</span>
                       </div>
                     </div>
                   )}
@@ -285,6 +331,27 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                     </div>
                   )}
 
+                  {/* Conversational Follow-Up Suggestion Pills */}
+                  {msg.responseObj?.suggested_next_steps && msg.responseObj.suggested_next_steps.length > 0 && (
+                    <div className="mt-3 pt-2.5 border-t border-gray-700/60 space-y-1.5">
+                      <div className="text-[10px] uppercase font-bold text-gray-400">Suggested Follow-Up Interrogations:</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.responseObj.suggested_next_steps.map((step, sIdx) => {
+                          const actionText = step.includes("'") ? step.split("'")[1] : step;
+                          return (
+                            <button
+                              key={sIdx}
+                              onClick={() => handleSend(actionText)}
+                              className="text-[11px] bg-dark-900 hover:bg-indigo-600/30 border border-indigo-500/30 hover:border-indigo-400 text-indigo-300 hover:text-white px-2.5 py-1 rounded-full font-semibold transition-colors flex items-center space-x-1"
+                            >
+                              <span>👉 {step}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Trigger Visual Highlight Action Button */}
                   {msg.responseObj?.visual_actions && (
                     <button
@@ -302,7 +369,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
             {isLoading && (
               <div className="flex items-center space-x-2 text-xs text-gray-400 bg-dark-800 p-3 rounded-lg w-fit border border-gray-700">
                 <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" />
-                <span>Consulting Gemini LLM, Knowledge Graph & Tower Telemetry...</span>
+                <span>Executing Dynamic Query Plan across Graph, DB & Telemetry...</span>
               </div>
             )}
           </div>
@@ -320,7 +387,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder="Ask any investigation question or click the mic to speak..."
+                placeholder="Ask any open-ended investigation question or click the mic to speak..."
                 className="flex-1 bg-dark-900 border border-gray-700 rounded-lg px-3.5 py-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
               />
 

@@ -1,0 +1,12 @@
+PUBLIC SOURCE RECORD OSINT-0002
+Source: Handelsblatt Regional (synthetic)
+Reference: https://example-news.invalid/original/alpine-holdings-shell-report
+Source type: NEWS
+Published: 2023-11-04T08:00:00
+Assessed reliability: 0.78
+Reported by 6 further outlets carrying the same text.
+
+Extracted claims:
+  - An investigation by this outlet identified Alpine Holdings AG among a group of Zurich holding companies sharing a single registered address and nominee director.
+
+Potential external match. Human verification required.

@@ -1,220 +1,287 @@
-from fastapi import APIRouter, Query
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+"""Map, timeline and replay endpoints.
+
+Events were previously a Python list literal in this module. They are read from
+the event store now, so filters are real queries and uploaded data appears here
+without a code change.
+"""
+
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from app.core.security import accessible_cases, get_current_user, require_case_access
+from app.models.database import get_db
+from app.models.entities import Entity, Event
 from app.schemas.schemas import MapEventFeature, TimelineEvent
 
-router = APIRouter(prefix="/workspace", tags=["Map & Timeline Synchronizer"])
+router = APIRouter(prefix="/workspace", tags=["Map, Timeline and Replay"])
 
-def get_all_raw_events() -> List[Dict[str, Any]]:
-    return [
-        {
-            "id": "EVT-CDR-01",
-            "case_id": "CASE-2024-8812",
-            "title": "Voice Call: Vikram Malhotra to Amit Shahani",
-            "event_type": "CDR_CALL",
-            "timestamp": "2024-02-10T11:20:00Z",
-            "location_name": "Connaught Place Head Office, New Delhi",
-            "latitude": 28.6315,
-            "longitude": 77.2167,
-            "related_entities": ["ENT-PER-01", "ENT-PER-02", "ENT-PH-01", "ENT-PH-02"],
-            "evidence_id": "EVID-CDR-01",
-            "summary": "145s call via Connaught Place tower regarding initial logistics arrangements.",
-            "confidence": 0.99
-        },
-        {
-            "id": "EVT-TX-01",
-            "case_id": "CASE-2024-8812",
-            "title": "Bank Transfer: $50,000 USD (Zenith to Apex)",
-            "event_type": "FINANCIAL_TRANSACTION",
-            "timestamp": "2024-02-11T10:00:00Z",
-            "location_name": "Metro National Bank, New Delhi",
-            "latitude": 28.6315,
-            "longitude": 77.2167,
-            "related_entities": ["ENT-ORG-01", "ENT-ORG-02", "ENT-ACC-01", "ENT-ACC-02"],
-            "evidence_id": "EVID-BANK-01",
-            "summary": "Fund transfer of $50,000 USD executed between shell entities.",
-            "confidence": 0.99
-        },
-        {
-            "id": "EVT-CDR-02",
-            "case_id": "CASE-2024-8812",
-            "title": "Voice Call: Vikram Malhotra to Rahul Sharma",
-            "event_type": "CDR_CALL",
-            "timestamp": "2024-02-12T15:40:00Z",
-            "location_name": "Khan Market, New Delhi",
-            "latitude": 28.6000,
-            "longitude": 77.2270,
-            "related_entities": ["ENT-PER-01", "ENT-PER-03", "ENT-PH-01", "ENT-PH-03"],
-            "evidence_id": "EVID-CDR-01",
-            "summary": "80s call to dispatch vehicle DL-04-E-5544.",
-            "confidence": 0.98
-        },
-        {
-            "id": "EVT-TOLL-01",
-            "case_id": "CASE-2024-8812",
-            "title": "ANPR Camera: Fortuner DL-04-E-5544 (Northbound)",
-            "event_type": "VEHICLE_SURVEILLANCE",
-            "timestamp": "2024-02-14T18:40:00Z",
-            "location_name": "Kherki Daula Toll Plaza, Delhi-Gurgaon",
-            "latitude": 28.4032,
-            "longitude": 76.9930,
-            "related_entities": ["ENT-VEH-01", "ENT-PER-01"],
-            "evidence_id": "EVID-TOLL-01",
-            "summary": "Black Toyota Fortuner captured moving northbound towards Delhi.",
-            "confidence": 0.97
-        },
-        {
-            "id": "EVT-MEET-01",
-            "case_id": "CASE-2024-8812",
-            "title": "Surveillance: Vikram Malhotra & Amit Shahani Secret Meeting",
-            "event_type": "SUSPICIOUS_MEETING",
-            "timestamp": "2024-02-14T19:30:00Z",
-            "location_name": "Hotel Grand Palace, Aerocity, New Delhi",
-            "latitude": 28.5504,
-            "longitude": 77.1210,
-            "related_entities": ["ENT-PER-01", "ENT-PER-02", "ENT-VEH-01", "ENT-LOC-01"],
-            "evidence_id": "EVID-CCTV-01",
-            "summary": "CCTV records Vikram arriving in vehicle DL-04-E-5544 and receiving encrypted tablet ledger from Amit Shahani.",
-            "confidence": 0.98
-        },
-        {
-            "id": "EVT-CDR-04",
-            "case_id": "CASE-2024-8812",
-            "title": "CDR Tower Triangulation: Aerocity Cell Tower",
-            "event_type": "CDR_CALL",
-            "timestamp": "2024-02-14T19:34:10Z",
-            "location_name": "Aerocity Tower DEL-TOW-508",
-            "latitude": 28.5504,
-            "longitude": 77.1210,
-            "related_entities": ["ENT-PER-01", "ENT-PER-02", "ENT-PH-01", "ENT-PH-02"],
-            "evidence_id": "EVID-CDR-01",
-            "summary": "320s call during Aerocity meeting. Directly contradicts driver's Dubai alibi.",
-            "confidence": 0.99
-        },
-        {
-            "id": "EVT-TOLL-02",
-            "case_id": "CASE-2024-8812",
-            "title": "ANPR Camera: Fortuner DL-04-E-5544 (Southbound)",
-            "event_type": "VEHICLE_SURVEILLANCE",
-            "timestamp": "2024-02-14T21:10:00Z",
-            "location_name": "Kherki Daula Toll Plaza, Delhi-Gurgaon",
-            "latitude": 28.4032,
-            "longitude": 76.9930,
-            "related_entities": ["ENT-VEH-01", "ENT-PER-01"],
-            "evidence_id": "EVID-TOLL-01",
-            "summary": "Vehicle returns toward Gurgaon after Aerocity meeting.",
-            "confidence": 0.97
-        },
-        {
-            "id": "EVT-TX-02",
-            "case_id": "CASE-2024-8812",
-            "title": "Wire Transfer: $250,000 USD Foreign Wire to Zurich",
-            "event_type": "FINANCIAL_TRANSACTION",
-            "timestamp": "2024-02-15T09:15:00Z",
-            "location_name": "Metro National Bank, New Delhi",
-            "latitude": 28.6315,
-            "longitude": 77.2167,
-            "related_entities": ["ENT-ORG-02", "ENT-ORG-03", "ENT-ACC-02", "ENT-ACC-03", "ENT-PER-02"],
-            "evidence_id": "EVID-BANK-01",
-            "summary": "Wire transfer authorized by Amit Shahani to Alpine Holdings AG (Zurich).",
-            "confidence": 0.99
-        },
-        {
-            "id": "EVT-CDR-07",
-            "case_id": "CASE-2024-8812",
-            "title": "Voice Call: Vikram Malhotra to Mumbai Port Logistics",
-            "event_type": "CDR_CALL",
-            "timestamp": "2024-02-17T12:10:00Z",
-            "location_name": "Nhava Sheva Port, Mumbai",
-            "latitude": 18.9496,
-            "longitude": 72.9510,
-            "related_entities": ["ENT-PER-01", "ENT-LOC-03"],
-            "evidence_id": "EVID-CDR-01",
-            "summary": "290s call coordinating customs clearance for shipping containers.",
-            "confidence": 0.96
-        },
-        {
-            "id": "EVT-CDR-08",
-            "case_id": "CASE-2023-1104",
-            "title": "Historical Call: Vikram Malhotra at Nhava Sheva Wharf",
-            "event_type": "HISTORICAL_CALL",
-            "timestamp": "2023-08-20T14:00:00Z",
-            "location_name": "Nhava Sheva Port, Mumbai",
-            "latitude": 18.9496,
-            "longitude": 72.9510,
-            "related_entities": ["ENT-PER-01", "ENT-LOC-03"],
-            "evidence_id": "EVID-CDR-02",
-            "summary": "Historical call linking Vikram to Golden Falcon coastal smuggling case.",
-            "confidence": 0.95
-        }
-    ]
+
+def _query_events(
+    db: Session,
+    allowed: List[str],
+    case_id: Optional[str],
+    entity_id: Optional[str],
+    event_types: Optional[List[str]],
+    start: Optional[datetime],
+    end: Optional[datetime],
+    min_confidence: Optional[float],
+) -> List[Event]:
+    scope = [case_id] if case_id else allowed
+    scope = [c for c in scope if c in allowed]
+    if not scope:
+        return []
+
+    query = db.query(Event).filter(Event.case_id.in_(scope))
+    if start:
+        query = query.filter(Event.timestamp >= start)
+    if end:
+        query = query.filter(Event.timestamp <= end)
+    if event_types:
+        query = query.filter(Event.event_type.in_([t.upper() for t in event_types]))
+    if min_confidence is not None:
+        query = query.filter(Event.confidence >= min_confidence)
+
+    rows = query.order_by(Event.timestamp.asc()).all()
+    if entity_id:
+        rows = [r for r in rows if entity_id in (r.related_entities or [])]
+    return rows
+
+
+def _parse(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Not a valid ISO 8601 timestamp: {value}")
+    return parsed.replace(tzinfo=None) if parsed.tzinfo else parsed
+
 
 @router.get("/map-events", response_model=List[MapEventFeature])
-def get_map_events(
+def map_events(
     case_id: Optional[str] = None,
     entity_id: Optional[str] = None,
+    event_types: Optional[List[str]] = Query(None),
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    min_confidence: Optional[float] = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
-    raw = get_all_raw_events()
-    filtered = []
-    
-    for e in raw:
-        if case_id and e["case_id"] != case_id:
-            continue
-        if entity_id and entity_id not in e.get("related_entities", []):
-            continue
-        if start_date and e["timestamp"] < start_date:
-            continue
-        if end_date and e["timestamp"] > end_date:
-            continue
-            
-        filtered.append(MapEventFeature(
-            event_id=e["id"],
-            case_id=e["case_id"],
-            title=e["title"],
-            event_type=e["event_type"],
-            latitude=e["latitude"],
-            longitude=e["longitude"],
-            location_name=e["location_name"],
-            timestamp=datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00")),
-            related_entities=e.get("related_entities", []),
-            evidence_id=e.get("evidence_id"),
-            confidence=e.get("confidence", 1.0)
-        ))
-    return filtered
+    allowed = accessible_cases(db, user)
+    rows = _query_events(
+        db, allowed, case_id, entity_id, event_types,
+        _parse(start_date), _parse(end_date), min_confidence,
+    )
+    return [
+        MapEventFeature(
+            event_id=e.event_id,
+            case_id=e.case_id,
+            title=e.title,
+            event_type=e.event_type,
+            latitude=e.latitude,
+            longitude=e.longitude,
+            location_name=e.location_name or "",
+            timestamp=e.timestamp,
+            related_entities=e.related_entities or [],
+            evidence_id=e.evidence_id,
+            confidence=e.confidence or 1.0,
+        )
+        for e in rows
+        if e.latitude is not None and e.longitude is not None
+    ]
+
 
 @router.get("/timeline", response_model=List[TimelineEvent])
-def get_timeline(
+def timeline(
     case_id: Optional[str] = None,
     entity_id: Optional[str] = None,
-    event_type: Optional[str] = None
+    event_types: Optional[List[str]] = Query(None),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
-    raw = get_all_raw_events()
-    filtered = []
-    
-    for e in raw:
-        if case_id and e["case_id"] != case_id:
-            continue
-        if entity_id and entity_id not in e.get("related_entities", []):
-            continue
-        if event_type and e["event_type"] != event_type:
-            continue
-            
-        filtered.append(TimelineEvent(
-            id=e["id"],
-            case_id=e["case_id"],
-            title=e["title"],
-            event_type=e["event_type"],
-            start_time=datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00")),
-            location_name=e.get("location_name"),
-            latitude=e.get("latitude"),
-            longitude=e.get("longitude"),
-            related_entities=e.get("related_entities", []),
-            evidence_id=e.get("evidence_id"),
-            summary=e.get("summary", ""),
-            confidence=e.get("confidence", 1.0)
-        ))
-        
-    filtered.sort(key=lambda x: x.start_time)
-    return filtered
+    allowed = accessible_cases(db, user)
+    rows = _query_events(
+        db, allowed, case_id, entity_id, event_types,
+        _parse(start_date), _parse(end_date), None,
+    )
+    return [
+        TimelineEvent(
+            id=e.event_id,
+            case_id=e.case_id,
+            title=e.title,
+            event_type=e.event_type,
+            start_time=e.timestamp,
+            location_name=e.location_name,
+            latitude=e.latitude,
+            longitude=e.longitude,
+            related_entities=e.related_entities or [],
+            evidence_id=e.evidence_id,
+            summary=e.summary or "",
+            confidence=e.confidence or 1.0,
+        )
+        for e in rows
+    ]
+
+
+@router.get("/time-bounds")
+def time_bounds(
+    case_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Extent of the recorded activity, for the time slider's range."""
+    require_case_access(db, user, case_id)
+    rows = db.query(Event).filter(Event.case_id == case_id).order_by(Event.timestamp.asc()).all()
+    if not rows:
+        return {"case_id": case_id, "first": None, "last": None, "event_count": 0}
+    return {
+        "case_id": case_id,
+        "first": rows[0].timestamp,
+        "last": rows[-1].timestamp,
+        "event_count": len(rows),
+    }
+
+
+@router.get("/replay")
+def replay(
+    case_id: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Chronological reconstruction of the case.
+
+    Each frame carries the entities that had appeared by that point and the
+    relationships recorded by then, so the graph, map and timeline can be replayed
+    together as the investigation unfolds.
+    """
+    require_case_access(db, user, case_id)
+
+    from app.models.entities import Relationship
+
+    events = _query_events(
+        db, accessible_cases(db, user), case_id, None, None,
+        _parse(start_date), _parse(end_date), None,
+    )
+    if not events:
+        return {"case_id": case_id, "frames": [], "note": "No events recorded for this case."}
+
+    relationships = (
+        db.query(Relationship)
+        .filter(Relationship.case_id == case_id)
+        .order_by(Relationship.valid_from.asc())
+        .all()
+    )
+    labels = {
+        e.entity_id: e.label
+        for e in db.query(Entity).filter(Entity.case_id.in_(accessible_cases(db, user))).all()
+    }
+
+    frames = []
+    seen_entities: set = set()
+    for index, event in enumerate(events):
+        newly = [
+            eid for eid in (event.related_entities or []) if eid not in seen_entities
+        ]
+        seen_entities.update(event.related_entities or [])
+
+        known_relationships = [
+            r.rel_id
+            for r in relationships
+            if r.valid_from is not None and r.valid_from <= event.timestamp
+        ]
+
+        frames.append(
+            {
+                "frame": index,
+                "event_id": event.event_id,
+                "timestamp": event.timestamp,
+                "title": event.title,
+                "event_type": event.event_type,
+                "summary": event.summary,
+                "location_name": event.location_name,
+                "latitude": event.latitude,
+                "longitude": event.longitude,
+                "evidence_id": event.evidence_id,
+                "entities_present": sorted(seen_entities),
+                "entities_new_this_frame": newly,
+                "new_entity_labels": [labels.get(e, e) for e in newly],
+                "relationship_count": len(known_relationships),
+                "related_entities": event.related_entities or [],
+            }
+        )
+
+    return {
+        "case_id": case_id,
+        "frame_count": len(frames),
+        "first": frames[0]["timestamp"],
+        "last": frames[-1]["timestamp"],
+        "frames": frames,
+    }
+
+
+@router.get("/network-at")
+def network_at(
+    case_id: str,
+    at: str,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """The network as the records stood at a point in time.
+
+    Only relationships already recorded by that moment are included, so moving the
+    time control shows the network as it was then rather than the network as it is
+    now filtered by date.
+    """
+    require_case_access(db, user, case_id)
+
+    from app.models.entities import Relationship
+
+    cutoff = _parse(at)
+    if cutoff is None:
+        raise HTTPException(status_code=400, detail="Parameter 'at' is required.")
+
+    relationships = [
+        r
+        for r in db.query(Relationship).filter(Relationship.case_id == case_id).all()
+        if r.valid_from is not None and r.valid_from <= cutoff
+    ]
+    active_ids = {r.source_id for r in relationships} | {r.target_id for r in relationships}
+    entities = (
+        db.query(Entity).filter(Entity.entity_id.in_(active_ids)).all() if active_ids else []
+    )
+
+    return {
+        "case_id": case_id,
+        "as_of": cutoff,
+        "nodes": [
+            {
+                "id": e.entity_id,
+                "label": e.label,
+                "entity_type": e.entity_type,
+                "properties": e.properties or {},
+            }
+            for e in entities
+        ],
+        "edges": [
+            {
+                "id": r.rel_id,
+                "source": r.source_id,
+                "target": r.target_id,
+                "label": r.rel_type,
+                "relationship_type": r.rel_type,
+                "confidence": r.confidence,
+                "evidence_ids": r.evidence_ids or [],
+                "first_recorded": r.valid_from,
+            }
+            for r in relationships
+        ],
+        "stats": {"total_nodes": len(entities), "total_edges": len(relationships)},
+    }

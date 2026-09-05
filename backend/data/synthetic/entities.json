@@ -1,0 +1,548 @@
+[
+  {
+    "entity_id": "CASE-2024-8812",
+    "case_id": "CASE-2024-8812",
+    "label": "Operation ShadowNet",
+    "entity_type": "CASE",
+    "aliases": [],
+    "properties": {
+      "status": "ACTIVE"
+    }
+  },
+  {
+    "entity_id": "CASE-2023-1104",
+    "case_id": "CASE-2023-1104",
+    "label": "Operation Golden Falcon",
+    "entity_type": "CASE",
+    "aliases": [],
+    "properties": {
+      "status": "ARCHIVED"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-01",
+    "case_id": "CASE-2024-8812",
+    "label": "Vikram Malhotra",
+    "entity_type": "PERSON",
+    "aliases": [
+      "Vicky",
+      "V. Malhotra",
+      "Vikram M"
+    ],
+    "properties": {
+      "role": "Director, Zenith Holdings",
+      "pan": "SYNTH-PAN-0001",
+      "dob": "1974-03-11"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-02",
+    "case_id": "CASE-2024-8812",
+    "label": "Amit Shahani",
+    "entity_type": "PERSON",
+    "aliases": [
+      "Amit S.",
+      "A. Shahani"
+    ],
+    "properties": {
+      "role": "Finance Director, Apex Global Logistics",
+      "pan": "SYNTH-PAN-0002",
+      "dob": "1979-11-02"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-03",
+    "case_id": "CASE-2024-8812",
+    "label": "Rahul Sharma",
+    "entity_type": "PERSON",
+    "aliases": [
+      "Rahul S."
+    ],
+    "properties": {
+      "role": "Courier and transport coordinator",
+      "pan": "SYNTH-PAN-0003",
+      "dob": "1988-06-24"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-04",
+    "case_id": "CASE-2024-8812",
+    "label": "Rahul Verma",
+    "entity_type": "PERSON",
+    "aliases": [
+      "R. Verma"
+    ],
+    "properties": {
+      "role": "Telecom retail associate",
+      "pan": "SYNTH-PAN-0004",
+      "dob": "1991-01-15"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-05",
+    "case_id": "CASE-2024-8812",
+    "label": "Karan Mehra",
+    "entity_type": "PERSON",
+    "aliases": [
+      "Karan"
+    ],
+    "properties": {
+      "role": "Driver, Zenith Holdings",
+      "pan": "SYNTH-PAN-0005",
+      "dob": "1985-09-30"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-06",
+    "case_id": "CASE-2024-8812",
+    "label": "Priya Nair",
+    "entity_type": "PERSON",
+    "aliases": [
+      "P. Nair"
+    ],
+    "properties": {
+      "role": "External accountant",
+      "pan": "SYNTH-PAN-0006",
+      "dob": "1983-04-19"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-07",
+    "case_id": "CASE-2024-8812",
+    "label": "Sanjay Gupta",
+    "entity_type": "PERSON",
+    "aliases": [
+      "S. Gupta",
+      "Sanjay G"
+    ],
+    "properties": {
+      "role": "Licensed customs clearing agent",
+      "pan": "SYNTH-PAN-0007",
+      "dob": "1971-12-05"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-08",
+    "case_id": "CASE-2024-8812",
+    "label": "Imran Sheikh",
+    "entity_type": "PERSON",
+    "aliases": [
+      "Imran S."
+    ],
+    "properties": {
+      "role": "Port logistics fixer",
+      "pan": "SYNTH-PAN-0008",
+      "dob": "1980-07-08"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-09",
+    "case_id": "CASE-2024-8812",
+    "label": "Neha Kapoor",
+    "entity_type": "PERSON",
+    "aliases": [
+      "N. Kapoor"
+    ],
+    "properties": {
+      "role": "Nominee director",
+      "pan": "SYNTH-PAN-0009",
+      "dob": "1990-02-27"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-10",
+    "case_id": "CASE-2023-1104",
+    "label": "Farhan Qureshi",
+    "entity_type": "PERSON",
+    "aliases": [
+      "F. Qureshi"
+    ],
+    "properties": {
+      "role": "Wharf supervisor",
+      "pan": "SYNTH-PAN-0010",
+      "dob": "1977-05-14"
+    }
+  },
+  {
+    "entity_id": "ENT-PER-11",
+    "case_id": "CASE-2024-8812",
+    "label": "Vikram Malhotra",
+    "entity_type": "PERSON",
+    "aliases": [
+      "Vikram Malhothra"
+    ],
+    "properties": {
+      "role": "Director (record sourced from corporate registry extract)",
+      "pan": "SYNTH-PAN-0001",
+      "dob": "1974-03-11",
+      "source_system": "Registrar of Companies extract"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-01",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98110-22331",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919811022331"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom North",
+      "subscriber_entity_id": "ENT-PER-01"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-02",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98220-33442",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919822033442"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom West",
+      "subscriber_entity_id": "ENT-PER-02"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-03",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98711-44553",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919871144553"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom North",
+      "subscriber_entity_id": "ENT-PER-03"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-04",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98100-77889",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919810077889"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom North",
+      "subscriber_entity_id": "ENT-PER-04"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-05",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98110-99882",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919811099882"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom North",
+      "subscriber_entity_id": "ENT-PER-05"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-06",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98330-11220",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919833011220"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom West",
+      "subscriber_entity_id": "ENT-PER-06"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-07",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98450-66771",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919845066771"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom South",
+      "subscriber_entity_id": "ENT-PER-07"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-08",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-98330-99881",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919833099881"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom West",
+      "subscriber_entity_id": "ENT-PER-08"
+    }
+  },
+  {
+    "entity_id": "ENT-PH-09",
+    "case_id": "CASE-2024-8812",
+    "label": "+91-99000-11223",
+    "entity_type": "PHONE",
+    "aliases": [
+      "+919900011223"
+    ],
+    "properties": {
+      "carrier": "Synthetic Telecom North",
+      "subscriber": "Unregistered prepaid connection - subscriber not established"
+    }
+  },
+  {
+    "entity_id": "ENT-VEH-01",
+    "case_id": "CASE-2024-8812",
+    "label": "DL-04-E-5544",
+    "entity_type": "VEHICLE",
+    "aliases": [
+      "DL04E5544"
+    ],
+    "properties": {
+      "model": "Sport utility vehicle, black",
+      "registered_to": "Zenith Holdings Pvt Ltd"
+    }
+  },
+  {
+    "entity_id": "ENT-VEH-02",
+    "case_id": "CASE-2024-8812",
+    "label": "MH-02-CP-8811",
+    "entity_type": "VEHICLE",
+    "aliases": [
+      "MH02CP8811"
+    ],
+    "properties": {
+      "model": "Executive saloon, silver",
+      "registered_to": "Apex Global Logistics"
+    }
+  },
+  {
+    "entity_id": "ENT-VEH-03",
+    "case_id": "CASE-2024-8812",
+    "label": "HR-26-BQ-1109",
+    "entity_type": "VEHICLE",
+    "aliases": [
+      "HR26BQ1109"
+    ],
+    "properties": {
+      "model": "Panel van, white",
+      "registered_to": "Rahul Sharma"
+    }
+  },
+  {
+    "entity_id": "ENT-ORG-01",
+    "case_id": "CASE-2024-8812",
+    "label": "Zenith Holdings Pvt Ltd",
+    "entity_type": "ORGANIZATION",
+    "aliases": [],
+    "properties": {
+      "jurisdiction": "New Delhi, India",
+      "type": "Private limited company",
+      "incorporated": "2019-06-11"
+    }
+  },
+  {
+    "entity_id": "ENT-ORG-02",
+    "case_id": "CASE-2024-8812",
+    "label": "Apex Global Logistics",
+    "entity_type": "ORGANIZATION",
+    "aliases": [],
+    "properties": {
+      "jurisdiction": "Mumbai, India",
+      "type": "Freight forwarding",
+      "incorporated": "2016-02-03"
+    }
+  },
+  {
+    "entity_id": "ENT-ORG-03",
+    "case_id": "CASE-2024-8812",
+    "label": "Alpine Holdings AG",
+    "entity_type": "ORGANIZATION",
+    "aliases": [],
+    "properties": {
+      "jurisdiction": "Zurich, Switzerland",
+      "type": "Holding company",
+      "incorporated": "2021-09-28"
+    }
+  },
+  {
+    "entity_id": "ENT-ORG-04",
+    "case_id": "CASE-2023-1104",
+    "label": "Golden Falcon Wharf Logistics",
+    "entity_type": "ORGANIZATION",
+    "aliases": [],
+    "properties": {
+      "jurisdiction": "Navi Mumbai, India",
+      "type": "Port handling",
+      "incorporated": "2014-04-22"
+    }
+  },
+  {
+    "entity_id": "ENT-ORG-05",
+    "case_id": "CASE-2024-8812",
+    "label": "Meridian Trade FZE",
+    "entity_type": "ORGANIZATION",
+    "aliases": [],
+    "properties": {
+      "jurisdiction": "Free zone, offshore",
+      "type": "Trading",
+      "incorporated": "2022-01-17"
+    }
+  },
+  {
+    "entity_id": "ENT-ACC-01",
+    "case_id": "CASE-2024-8812",
+    "label": "Account 10110 (Zenith Holdings)",
+    "entity_type": "ACCOUNT",
+    "aliases": [],
+    "properties": {
+      "bank": "Synthetic Metro National Bank",
+      "currency": "INR"
+    }
+  },
+  {
+    "entity_id": "ENT-ACC-02",
+    "case_id": "CASE-2024-8812",
+    "label": "Account 99218 (Apex Global Logistics)",
+    "entity_type": "ACCOUNT",
+    "aliases": [],
+    "properties": {
+      "bank": "Synthetic Metro National Bank",
+      "currency": "USD"
+    }
+  },
+  {
+    "entity_id": "ENT-ACC-03",
+    "case_id": "CASE-2024-8812",
+    "label": "Account SW-77 (Alpine Holdings AG)",
+    "entity_type": "ACCOUNT",
+    "aliases": [],
+    "properties": {
+      "bank": "Synthetic Cantonal Bank",
+      "currency": "USD"
+    }
+  },
+  {
+    "entity_id": "ENT-ACC-04",
+    "case_id": "CASE-2024-8812",
+    "label": "Account 44821 (Meridian Trade FZE)",
+    "entity_type": "ACCOUNT",
+    "aliases": [],
+    "properties": {
+      "bank": "Synthetic Gulf Commercial Bank",
+      "currency": "USD"
+    }
+  },
+  {
+    "entity_id": "ENT-ACC-05",
+    "case_id": "CASE-2024-8812",
+    "label": "Account 30294 (Golden Falcon Wharf)",
+    "entity_type": "ACCOUNT",
+    "aliases": [],
+    "properties": {
+      "bank": "Synthetic Metro National Bank",
+      "currency": "INR"
+    }
+  },
+  {
+    "entity_id": "ENT-LOC-01",
+    "case_id": "CASE-2024-8812",
+    "label": "Hotel Grand Palace, Aerocity",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "New Delhi"
+    },
+    "latitude": 28.5504,
+    "longitude": 77.121
+  },
+  {
+    "entity_id": "ENT-LOC-02",
+    "case_id": "CASE-2024-8812",
+    "label": "Connaught Place commercial block",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "New Delhi"
+    },
+    "latitude": 28.6315,
+    "longitude": 77.2167
+  },
+  {
+    "entity_id": "ENT-LOC-03",
+    "case_id": "CASE-2024-8812",
+    "label": "Nhava Sheva container terminal",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "Navi Mumbai"
+    },
+    "latitude": 18.9496,
+    "longitude": 72.951
+  },
+  {
+    "entity_id": "ENT-LOC-04",
+    "case_id": "CASE-2024-8812",
+    "label": "Kherki Daula toll plaza",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "Gurugram"
+    },
+    "latitude": 28.4032,
+    "longitude": 76.993
+  },
+  {
+    "entity_id": "ENT-LOC-05",
+    "case_id": "CASE-2024-8812",
+    "label": "Khan Market",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "New Delhi"
+    },
+    "latitude": 28.6,
+    "longitude": 77.227
+  },
+  {
+    "entity_id": "ENT-LOC-06",
+    "case_id": "CASE-2024-8812",
+    "label": "Okhla industrial warehouse",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "New Delhi"
+    },
+    "latitude": 28.5355,
+    "longitude": 77.273
+  },
+  {
+    "entity_id": "ENT-LOC-07",
+    "case_id": "CASE-2024-8812",
+    "label": "Zenith Holdings registered office",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "New Delhi"
+    },
+    "latitude": 28.628,
+    "longitude": 77.219
+  },
+  {
+    "entity_id": "ENT-LOC-08",
+    "case_id": "CASE-2024-8812",
+    "label": "Indira Gandhi International Airport",
+    "entity_type": "LOCATION",
+    "aliases": [],
+    "properties": {
+      "city": "New Delhi"
+    },
+    "latitude": 28.5562,
+    "longitude": 77.0999
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "source_path": "C:/Users/ROG/OneDrive/Documents/Spemacs/SPEC.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "SPEMASS — Master Implementation Specification",
+  "summary": "Authoritative implementation spec for SPEMASS investigative intelligence platform: dynamic query planner copilot, GraphRAG, evidence integrity, OSINT, tri-view workspace.",
+  "scope": [
+    "Universal Investigation Copilot",
+    "Dynamic Investigation Query Planner",
+    "GraphRAG",
+    "evidence-grounded answers with citations",
+    "counter-evidence",
+    "evidence integrity",
+    "chain of custody",
+    "evidence ledger",
+    "OSINT source-independence",
+    "tri-view Graph+Map+Timeline synchronization",
+    "network anomaly analysis",
+    "entity resolution",
+    "case comparison"
+  ],
+  "cross_refs": ["PRD.md", "planning.md"],
+  "locked": false,
+  "precedence": 0,
+  "notes": "MANIFEST_TYPE=SPEC applied as authoritative. Document self-declares supersession over PRD.md and planning.md; MANIFEST_PRECEDENCE=0 recorded."
+}

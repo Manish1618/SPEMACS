@@ -1,5 +1,0 @@
-tx_id,case_id,timestamp,sender_account,sender_name,receiver_account,receiver_name,amount_usd,currency,status,bank_name,evidence_id
-TX-9901,CASE-2024-8812,2024-02-11T10:00:00Z,ACC-10110,Zenith Holdings,ACC-99218,Apex Logistics (Amit),50000,USD,COMPLETED,Metro National Bank,EVID-BANK-01
-TX-9902,CASE-2024-8812,2024-02-15T09:15:00Z,ACC-99218,Apex Logistics (Amit),ACC-SWISS-77,Alpine Holdings Zurich,250000,USD,COMPLETED,Metro National Bank,EVID-BANK-01
-TX-9903,CASE-2024-8812,2024-02-16T14:30:00Z,ACC-99218,Apex Logistics (Amit),ACC-CASH-04,Rahul Sharma Courier,15000,USD,COMPLETED,Metro National Bank,EVID-BANK-01
-TX-9904,CASE-2024-8812,2024-02-18T16:00:00Z,ACC-10110,Zenith Holdings,ACC-55112,Port Clearing Agency,40000,USD,COMPLETED,Global Trade Bank,EVID-BANK-01

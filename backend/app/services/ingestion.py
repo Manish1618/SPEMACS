@@ -1,189 +1,439 @@
+"""Loads the synthetic dataset into the database and rebuilds the knowledge graph.
+
+The previous seeder declared entities and relationships as literal Python calls in
+this module, which meant nothing was queryable and the seed was not idempotent
+(it looked for evidence ids it never created, so it duplicated every evidence row
+on each restart). Everything is now read from data/synthetic and written to real
+tables, and every write is an upsert keyed on a stable id.
+
+The graph is projected from those tables, so the database is the single source of
+truth and NetworkX is only an analysis index over it.
+"""
+
 import json
-import pandas as pd
-from pathlib import Path
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy.orm import Session
+
 from app.core.config import settings
-from app.models.entities import Case, Document, Evidence, CustodyEvent, BlockchainRecord, User
 from app.core.security import get_password_hash
-from app.services.evidence import create_evidence_record, calculate_sha256
+from app.models.entities import (
+    Case,
+    Document,
+    Entity,
+    Event,
+    Hypothesis,
+    OsintRecord,
+    Relationship,
+    User,
+)
+from app.services.evidence import calculate_sha256, register_evidence
 from app.services.graph_engine import knowledge_graph
 
-def seed_database_and_graph(db: Session):
-    # 1. Create Default Admin & Investigator Users
-    if db.query(User).count() == 0:
-        admin_user = User(
-            username="admin",
-            email="admin@spemass.gov",
-            full_name="Chief Investigator Rajesh Verma",
-            hashed_password=get_password_hash("admin123"),
-            role="ADMIN",
-            badge_number="IND-EOW-001"
-        )
-        inv_user = User(
-            username="rajiv_sen",
-            email="rajiv.sen@spemass.gov",
-            full_name="Inspector Rajiv Sen",
-            hashed_password=get_password_hash("investigator123"),
-            role="LEAD_INVESTIGATOR",
-            badge_number="IND-EOW-884"
-        )
-        db.add_all([admin_user, inv_user])
+SYNTHETIC_DIR = settings.DATA_DIR / "synthetic"
+
+DEFAULT_USERS = [
+    {
+        "username": "admin",
+        "email": "admin@spemass.example",
+        "full_name": "Chief Investigator R. Verma",
+        "password": "admin123",
+        "role": "ADMIN",
+        "badge_number": "SYNTH-001",
+    },
+    {
+        "username": "rajiv_sen",
+        "email": "rajiv.sen@spemass.example",
+        "full_name": "Inspector Rajiv Sen",
+        "password": "investigator123",
+        "role": "LEAD_INVESTIGATOR",
+        "badge_number": "SYNTH-884",
+    },
+    {
+        "username": "ananya_rao",
+        "email": "ananya.rao@spemass.example",
+        "full_name": "Analyst Ananya Rao",
+        "password": "analyst123",
+        "role": "ANALYST",
+        "badge_number": "SYNTH-231",
+    },
+    {
+        "username": "auditor",
+        "email": "auditor@spemass.example",
+        "full_name": "Integrity Auditor",
+        "password": "auditor123",
+        "role": "AUDITOR",
+        "badge_number": "SYNTH-900",
+    },
+]
+
+# Which case each auditless user may reach. The auditor sees integrity records
+# across cases; the analyst is scoped to the active case only.
+USER_CASE_ACCESS = {
+    "admin": ["CASE-2024-8812", "CASE-2023-1104"],
+    "rajiv_sen": ["CASE-2024-8812", "CASE-2023-1104"],
+    "ananya_rao": ["CASE-2024-8812"],
+    "auditor": ["CASE-2024-8812", "CASE-2023-1104"],
+}
+
+
+def _load(name: str) -> List[Dict[str, Any]]:
+    path = SYNTHETIC_DIR / name
+    if not path.exists():
+        return []
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _parse_dt(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _seed_users(db: Session) -> None:
+    for spec in DEFAULT_USERS:
+        user = db.query(User).filter(User.username == spec["username"]).first()
+        if user is None:
+            db.add(
+                User(
+                    username=spec["username"],
+                    email=spec["email"],
+                    full_name=spec["full_name"],
+                    hashed_password=get_password_hash(spec["password"]),
+                    role=spec["role"],
+                    badge_number=spec["badge_number"],
+                )
+            )
+    db.commit()
+
+
+def _seed_cases(db: Session) -> None:
+    for spec in _load("cases.json"):
+        case = db.query(Case).filter(Case.case_id == spec["case_id"]).first()
+        if case is None:
+            case = Case(case_id=spec["case_id"], created_at=_parse_dt(spec.get("created_at")))
+            db.add(case)
+        case.title = spec["title"]
+        case.description = spec.get("description")
+        case.status = spec.get("status", "ACTIVE")
+        case.classification = spec.get("classification", "RESTRICTED")
+        case.lead_investigator = spec["lead_investigator"]
+        case.assigned_team = [
+            username
+            for username, cases in USER_CASE_ACCESS.items()
+            if spec["case_id"] in cases
+        ]
+    db.commit()
+
+
+def _seed_entities(db: Session) -> None:
+    for spec in _load("entities.json"):
+        entity = db.query(Entity).filter(Entity.entity_id == spec["entity_id"]).first()
+        if entity is None:
+            entity = Entity(entity_id=spec["entity_id"])
+            db.add(entity)
+        entity.case_id = spec["case_id"]
+        entity.label = spec["label"]
+        entity.entity_type = spec["entity_type"]
+        entity.aliases = spec.get("aliases", [])
+        entity.properties = spec.get("properties", {})
+        entity.latitude = spec.get("latitude")
+        entity.longitude = spec.get("longitude")
+    db.commit()
+
+
+def _seed_relationships(db: Session) -> None:
+    for spec in _load("relationships.json"):
+        rel = db.query(Relationship).filter(Relationship.rel_id == spec["rel_id"]).first()
+        if rel is None:
+            rel = Relationship(rel_id=spec["rel_id"])
+            db.add(rel)
+        rel.case_id = spec["case_id"]
+        rel.source_id = spec["source_id"]
+        rel.target_id = spec["target_id"]
+        rel.rel_type = spec["rel_type"]
+        rel.confidence = spec.get("confidence", 1.0)
+        rel.assertion_kind = spec.get("assertion_kind", "OBSERVED")
+        rel.evidence_ids = spec.get("evidence_ids", [])
+        rel.valid_from = _parse_dt(spec.get("valid_from"))
+        rel.properties = spec.get("properties", {})
+    db.commit()
+
+
+def _seed_events(db: Session) -> None:
+    for spec in _load("events.json"):
+        event = db.query(Event).filter(Event.event_id == spec["event_id"]).first()
+        if event is None:
+            event = Event(event_id=spec["event_id"])
+            db.add(event)
+        event.case_id = spec["case_id"]
+        event.title = spec["title"]
+        event.event_type = spec["event_type"]
+        event.timestamp = _parse_dt(spec["timestamp"])
+        event.location_name = spec.get("location_name")
+        event.latitude = spec.get("latitude")
+        event.longitude = spec.get("longitude")
+        event.related_entities = spec.get("related_entities", [])
+        event.evidence_id = spec.get("evidence_id")
+        event.summary = spec.get("summary", "")
+        event.confidence = spec.get("confidence", 1.0)
+        event.properties = spec.get("properties", {})
+    db.commit()
+
+
+def _seed_documents_and_evidence(db: Session) -> None:
+    """Register documents, then the derived-record evidence the events cite.
+
+    Evidence content is written to disk so integrity verification rehashes a real
+    artifact rather than the string it was just handed.
+    """
+    for spec in _load("documents.json"):
+        text = spec["extracted_text"]
+        content = text.encode("utf-8")
+        doc = db.query(Document).filter(Document.document_id == spec["document_id"]).first()
+        if doc is None:
+            doc = Document(document_id=spec["document_id"], created_at=_parse_dt(spec.get("created_at")))
+            db.add(doc)
+        doc.case_id = spec["case_id"]
+        doc.filename = spec["filename"]
+        doc.title = spec["title"]
+        doc.file_type = spec["file_type"]
+        doc.storage_path = f"storage/documents/{spec['filename']}"
+        doc.sha256_hash = calculate_sha256(content)
+        doc.extracted_text = text
+        doc.parsed_metadata = {"evidence_id": spec["evidence_id"]}
+        doc.uploaded_by = spec["uploaded_by"]
         db.commit()
 
-    # 2. Ingest Cases
-    cases_file = settings.DATA_DIR / "synthetic" / "cases.json"
-    if cases_file.exists():
-        with open(cases_file, "r", encoding="utf-8") as f:
-            cases_data = json.load(f)
-            for c in cases_data:
-                existing = db.query(Case).filter(Case.case_id == c["case_id"]).first()
-                if not existing:
-                    new_case = Case(
-                        case_id=c["case_id"],
-                        title=c["title"],
-                        description=c["description"],
-                        status=c["status"],
-                        classification=c["classification"],
-                        lead_investigator=c["lead_investigator"],
-                        assigned_team=["rajiv_sen", "admin"],
-                        created_at=datetime.fromisoformat(c["created_at"].replace("Z", "+00:00"))
-                    )
-                    db.add(new_case)
-            db.commit()
+        doc_dir = settings.STORAGE_DIR / "documents"
+        doc_dir.mkdir(parents=True, exist_ok=True)
+        (doc_dir / spec["filename"]).write_bytes(content)
 
-    # Clear and rebuild graph
-    knowledge_graph.clear()
-    
-    # Add Core Case Nodes to Graph
-    knowledge_graph.add_entity("CASE-2024-8812", "Operation ShadowNet (2024)", "Case", "CASE-2024-8812")
-    knowledge_graph.add_entity("CASE-2023-1104", "Operation Golden Falcon (2023)", "Case", "CASE-2023-1104")
+        register_evidence(
+            db=db,
+            evidence_id=spec["evidence_id"],
+            case_id=spec["case_id"],
+            title=spec["title"],
+            evidence_type=spec["file_type"],
+            content_bytes=content,
+            document_id=spec["document_id"],
+            performed_by=spec["uploaded_by"],
+            metadata={"source": "case document"},
+        )
 
-    # 3. Ingest Documents & Scanned Evidence
-    fir_file = settings.DATA_DIR / "synthetic" / "fir_records.json"
-    if fir_file.exists():
-        with open(fir_file, "r", encoding="utf-8") as f:
-            docs_data = json.load(f)
-            for d in docs_data:
-                existing_doc = db.query(Document).filter(Document.document_id == d["document_id"]).first()
-                content_bytes = d["extracted_text"].encode("utf-8")
-                file_hash = calculate_sha256(content_bytes)
-                
-                if not existing_doc:
-                    doc = Document(
-                        document_id=d["document_id"],
-                        case_id=d["case_id"],
-                        filename=d["filename"],
-                        title=d["title"],
-                        file_type=d["file_type"],
-                        storage_path=f"storage/{d['filename']}",
-                        sha256_hash=file_hash,
-                        extracted_text=d["extracted_text"],
-                        uploaded_by=d["uploaded_by"],
-                        created_at=datetime.fromisoformat(d["created_at"].replace("Z", "+00:00"))
-                    )
-                    db.add(doc)
-                    db.commit()
-                    
-                    # Create Evidence & Blockchain Link
-                    create_evidence_record(
-                        db=db,
-                        case_id=d["case_id"],
-                        title=d["title"],
-                        evidence_type="DOC_SCAN",
-                        content_bytes=content_bytes,
-                        document_id=d["document_id"],
-                        performed_by=d["uploaded_by"]
-                    )
+    # Derived-record evidence. The artifact is the actual record listing built
+    # from the events that cite it, so the hash covers real content.
+    derived = [
+        ("EVID-CDR-01", "CASE-2024-8812", "Call detail records, Delhi NCR cluster", "CDR_EXTRACT"),
+        ("EVID-BANK-01", "CASE-2024-8812", "Bank ledger extract, February 2024", "BANK_EXTRACT"),
+        ("EVID-BANK-02", "CASE-2024-8812", "Bank ledger extract, supplementary transfers", "BANK_EXTRACT"),
+        ("EVID-TOLL-01", "CASE-2024-8812", "Number plate reader logs, Kherki Daula", "ANPR_EXTRACT"),
+        ("EVID-CDR-ARCHIVE-01", "CASE-2023-1104", "Archived call detail records, Nhava Sheva", "CDR_EXTRACT"),
+    ]
 
-    # 4. Add Canonical Entities to Knowledge Graph
-    # Persons
-    knowledge_graph.add_entity(
-        "ENT-PER-01", "Vikram Malhotra", "Person", "CASE-2024-8812",
-        {"aliases": ["Vicky", "V. Malhotra"], "role": "Syndicate Head / Director", "phone": "+919811022331", "pan": "ABCDE1234F"}
-    )
-    knowledge_graph.add_entity(
-        "ENT-PER-02", "Amit Shahani", "Person", "CASE-2024-8812",
-        {"aliases": ["AS", "Amit S."], "role": "Finance Director", "phone": "+919822033442", "pan": "FGHIJ5678K"}
-    )
-    knowledge_graph.add_entity(
-        "ENT-PER-03", "Rahul Sharma", "Person", "CASE-2024-8812",
-        {"aliases": ["Rahul S."], "role": "Courier & Transport", "phone": "+919871144553"}
-    )
-    knowledge_graph.add_entity(
-        "ENT-PER-04", "Rahul Verma", "Person", "CASE-2024-8812",
-        {"aliases": ["R. Verma"], "role": "Telecom Associate", "phone": "+919810077889"}
-    )
-    knowledge_graph.add_entity(
-        "ENT-PER-05", "Karan Mehra", "Person", "CASE-2024-8812",
-        {"aliases": ["Karan"], "role": "Driver (Zenith Holdings)", "phone": "+919811099882"}
-    )
-
-    # Phones
-    knowledge_graph.add_entity("ENT-PH-01", "+91 98110 22331", "Phone", "CASE-2024-8812", {"carrier": "Airtel Delhi", "owner": "Vikram Malhotra"})
-    knowledge_graph.add_entity("ENT-PH-02", "+91 98220 33442", "Phone", "CASE-2024-8812", {"carrier": "Vodafone Delhi", "owner": "Amit Shahani"})
-    knowledge_graph.add_entity("ENT-PH-03", "+91 98711 44553", "Phone", "CASE-2024-8812", {"carrier": "Jio Delhi", "owner": "Rahul Sharma"})
-
-    # Vehicles
-    knowledge_graph.add_entity("ENT-VEH-01", "DL-04-E-5544", "Vehicle", "CASE-2024-8812", {"model": "Toyota Fortuner (Black)", "owner": "Zenith Holdings"})
-    knowledge_graph.add_entity("ENT-VEH-02", "MH-02-CP-8811", "Vehicle", "CASE-2024-8812", {"model": "Mercedes E-Class", "owner": "Apex Global Logistics"})
-
-    # Organizations
-    knowledge_graph.add_entity("ENT-ORG-01", "Zenith Holdings Pvt Ltd", "Organization", "CASE-2024-8812", {"jurisdiction": "New Delhi, India", "type": "Shell Company"})
-    knowledge_graph.add_entity("ENT-ORG-02", "Apex Global Logistics", "Organization", "CASE-2024-8812", {"jurisdiction": "Mumbai / Delhi", "type": "Logistics & Freight"})
-    knowledge_graph.add_entity("ENT-ORG-03", "Alpine Holdings AG", "Organization", "CASE-2024-8812", {"jurisdiction": "Zurich, Switzerland", "type": "Offshore Holding"})
-
-    # Accounts
-    knowledge_graph.add_entity("ENT-ACC-01", "Account #10110 (Zenith)", "Account", "CASE-2024-8812", {"bank": "Metro National Bank", "currency": "INR/USD"})
-    knowledge_graph.add_entity("ENT-ACC-02", "Account #99218 (Apex)", "Account", "CASE-2024-8812", {"bank": "Metro National Bank", "currency": "USD"})
-    knowledge_graph.add_entity("ENT-ACC-03", "Account #SWISS-77 (Alpine)", "Account", "CASE-2024-8812", {"bank": "Banque Cantonale de Genève", "currency": "USD"})
-
-    # Locations
-    knowledge_graph.add_entity("ENT-LOC-01", "Hotel Grand Palace Aerocity", "Location", "CASE-2024-8812", {"latitude": 28.5504, "longitude": 77.1210})
-    knowledge_graph.add_entity("ENT-LOC-02", "Connaught Place Head Office", "Location", "CASE-2024-8812", {"latitude": 28.6315, "longitude": 77.2167})
-    knowledge_graph.add_entity("ENT-LOC-03", "Nhava Sheva Port Mumbai", "Location", "CASE-2024-8812", {"latitude": 18.9496, "longitude": 72.9510})
-    knowledge_graph.add_entity("ENT-LOC-04", "Kherki Daula Toll Plaza", "Location", "CASE-2024-8812", {"latitude": 28.4032, "longitude": 76.9930})
-
-    # Add Relationships
-    # Person -> Organization / Account / Vehicle / Phone
-    knowledge_graph.add_relationship("R-01", "ENT-PER-01", "ENT-ORG-01", "WORKS_FOR", "CASE-2024-8812", 0.98, ["EVID-DOC-01"])
-    knowledge_graph.add_relationship("R-02", "ENT-PER-02", "ENT-ORG-02", "WORKS_FOR", "CASE-2024-8812", 0.98, ["EVID-DOC-01"])
-    knowledge_graph.add_relationship("R-03", "ENT-PER-01", "ENT-PH-01", "USED", "CASE-2024-8812", 0.99, ["EVID-CDR-01"])
-    knowledge_graph.add_relationship("R-04", "ENT-PER-02", "ENT-PH-02", "USED", "CASE-2024-8812", 0.99, ["EVID-CDR-01"])
-    knowledge_graph.add_relationship("R-05", "ENT-PER-01", "ENT-VEH-01", "USED", "CASE-2024-8812", 0.95, ["EVID-TOLL-01", "EVID-CCTV-01"])
-    knowledge_graph.add_relationship("R-06", "ENT-PER-01", "ENT-PER-02", "ASSOCIATED_WITH", "CASE-2024-8812", 0.94, ["EVID-CCTV-01", "EVID-CDR-01"])
-    knowledge_graph.add_relationship("R-07", "ENT-PER-02", "ENT-PER-03", "COMMUNICATED_WITH", "CASE-2024-8812", 0.92, ["EVID-CDR-01"])
-    knowledge_graph.add_relationship("R-08", "ENT-PER-03", "ENT-PER-04", "COMMUNICATED_WITH", "CASE-2024-8812", 0.85, ["EVID-CDR-01"])
-    
-    # Financial Flow
-    knowledge_graph.add_relationship("R-09", "ENT-ORG-01", "ENT-ACC-01", "CONTROLS", "CASE-2024-8812", 0.99, ["EVID-BANK-01"])
-    knowledge_graph.add_relationship("R-10", "ENT-ORG-02", "ENT-ACC-02", "CONTROLS", "CASE-2024-8812", 0.99, ["EVID-BANK-01"])
-    knowledge_graph.add_relationship("R-11", "ENT-ACC-01", "ENT-ACC-02", "TRANSFERRED_FUNDS", "CASE-2024-8812", 0.99, ["EVID-BANK-01"], {"amount": "$50,000 USD", "date": "2024-02-11"})
-    knowledge_graph.add_relationship("R-12", "ENT-ACC-02", "ENT-ACC-03", "TRANSFERRED_FUNDS", "CASE-2024-8812", 0.99, ["EVID-BANK-01"], {"amount": "$250,000 USD", "date": "2024-02-15"})
-    knowledge_graph.add_relationship("R-13", "ENT-ACC-03", "ENT-ORG-03", "OWNED_BY", "CASE-2024-8812", 0.95, ["EVID-BANK-01"])
-
-    # Cross-Case Connections
-    knowledge_graph.add_relationship("R-14", "ENT-PER-01", "CASE-2024-8812", "INVOLVED_IN", "CASE-2024-8812", 1.0)
-    knowledge_graph.add_relationship("R-15", "ENT-PER-01", "CASE-2023-1104", "INVOLVED_IN", "CASE-2023-1104", 1.0)
-    knowledge_graph.add_relationship("R-16", "ENT-PER-01", "ENT-LOC-03", "RECORDED_AT", "CASE-2023-1104", 0.95, ["EVID-CDR-02"])
-
-    # Add Ingested Tabular Records to Evidence Table if missing
-    for ev_id, title, ev_type in [
-        ("EVID-CDR-01", "Call Detail Records - Delhi / NCR Cluster", "CDR_TELEMETRY"),
-        ("EVID-BANK-01", "Metro National Bank Transaction Ledger (Feb 2024)", "BANKING_LEDGER"),
-        ("EVID-TOLL-01", "NHAI ANPR Highway Toll Camera Logs", "VEHICLE_SURVEILLANCE"),
-        ("EVID-CCTV-01", "Hotel Grand Palace Aerocity CCTV Transcript", "CCTV_SURVEILLANCE"),
-        ("EVID-CDR-02", "Archived Case 2023-1104 Mumbai Port CDRs", "HISTORICAL_RECORD")
-    ]:
-        existing_ev = db.query(Evidence).filter(Evidence.evidence_id == ev_id).first()
-        if not existing_ev:
-            create_evidence_record(
-                db=db,
-                case_id="CASE-2024-8812" if ev_id != "EVID-CDR-02" else "CASE-2023-1104",
-                title=title,
-                evidence_type=ev_type,
-                content_bytes=f"{title}_{ev_id}_RAW_AUTHENTICATED_FORENSIC_STREAM".encode("utf-8"),
-                performed_by="system_seeder"
+    for evidence_id, case_id, title, evidence_type in derived:
+        rows = (
+            db.query(Event)
+            .filter(Event.evidence_id == evidence_id)
+            .order_by(Event.timestamp.asc())
+            .all()
+        )
+        lines = [title.upper(), f"Records: {len(rows)}", ""]
+        for row in rows:
+            props = " ".join(f"{k}={v}" for k, v in sorted((row.properties or {}).items()))
+            lines.append(
+                f"{row.event_id} | {row.timestamp.isoformat()} | {row.title} | "
+                f"{row.location_name or '-'} | {props}"
             )
+        content = ("\n".join(lines) + "\n").encode("utf-8")
 
-    print(">> Successfully seeded Database & Knowledge Graph with Operation ShadowNet dataset.")
+        register_evidence(
+            db=db,
+            evidence_id=evidence_id,
+            case_id=case_id,
+            title=title,
+            evidence_type=evidence_type,
+            content_bytes=content,
+            performed_by="records_desk",
+            metadata={"record_count": len(rows), "source": "records extract"},
+        )
+
+
+def _seed_osint(db: Session) -> None:
+    for spec in _load("osint_records.json"):
+        record = (
+            db.query(OsintRecord).filter(OsintRecord.record_id == spec["record_id"]).first()
+        )
+        if record is None:
+            record = OsintRecord(record_id=spec["record_id"])
+            db.add(record)
+        record.case_id = spec["case_id"]
+        record.entity_id = spec.get("entity_id")
+        record.query_term = spec["query_term"]
+        record.source_name = spec["source_name"]
+        record.source_url = spec["source_url"]
+        record.source_type = spec.get("source_type", "NEWS")
+        record.published_at = _parse_dt(spec.get("published_at"))
+        record.reliability = spec.get("reliability", 0.5)
+        record.confidence = spec.get("confidence", 0.5)
+        record.claims = spec.get("claims", [])
+        # The hash of the claim text is what lets duplicate reporting be detected.
+        record.content_hash = calculate_sha256(
+            "\n".join(spec.get("claims", [])).encode("utf-8")
+        )
+        record.origin_record_id = spec.get("origin_record_id")
+        record.is_derivative = bool(spec.get("origin_record_id"))
+        record.requires_human_verification = spec.get("requires_human_verification", True)
+    db.commit()
+
+    # Public-source material is evidence too, and citations to it must resolve.
+    # Each originating source is sealed as its own artifact so a claim drawn from
+    # it can be traced back and re-verified like any other exhibit.
+    originals = [r for r in db.query(OsintRecord).all() if not r.is_derivative]
+    for record in originals:
+        evidence_id = f"EVID-OSINT-{record.record_id.split('-')[-1]}"
+        derivatives = (
+            db.query(OsintRecord)
+            .filter(OsintRecord.origin_record_id == record.record_id)
+            .all()
+        )
+        lines = [
+            f"PUBLIC SOURCE RECORD {record.record_id}",
+            f"Source: {record.source_name}",
+            f"Reference: {record.source_url}",
+            f"Source type: {record.source_type}",
+            f"Published: {record.published_at.isoformat() if record.published_at else 'not stated'}",
+            f"Assessed reliability: {record.reliability}",
+            f"Reported by {len(derivatives)} further outlets carrying the same text.",
+            "",
+            "Extracted claims:",
+        ]
+        lines += [f"  - {claim}" for claim in (record.claims or [])]
+        if record.requires_human_verification:
+            lines += ["", "Potential external match. Human verification required."]
+
+        content = ("\n".join(lines) + "\n").encode("utf-8")
+        register_evidence(
+            db=db,
+            evidence_id=evidence_id,
+            case_id=record.case_id,
+            title=f"Public source: {record.source_name}",
+            evidence_type="OSINT_RECORD",
+            content_bytes=content,
+            performed_by="osint_collection",
+            metadata={
+                "osint_record_id": record.record_id,
+                "source_url": record.source_url,
+                "derivative_count": len(derivatives),
+            },
+        )
+        record.evidence_id = evidence_id
+    db.commit()
+
+
+def _seed_hypotheses(db: Session) -> None:
+    """Two opposed starting hypotheses, so the counter-evidence engine has
+    something to argue against from the first minute of a demo."""
+    seeds = [
+        {
+            "hypothesis_id": "HYP-01",
+            "case_id": "CASE-2024-8812",
+            "title": "The Zurich remittance was connected to the Aerocity meeting",
+            "statement": (
+                "The transfer of USD 250,000 to Alpine Holdings AG on 15 February 2024 was "
+                "arranged at the meeting recorded at Aerocity on 14 February 2024."
+            ),
+            "status": "UNDER_REVIEW",
+            "created_by": "rajiv_sen",
+        },
+        {
+            "hypothesis_id": "HYP-02",
+            "case_id": "CASE-2024-8812",
+            "title": "The Zurich remittance was an ordinary commercial payment",
+            "statement": (
+                "The transfer of USD 250,000 was an advance payment for equipment procurement, "
+                "unconnected to the meeting of 14 February 2024."
+            ),
+            "status": "OPEN",
+            "created_by": "rajiv_sen",
+        },
+    ]
+    for spec in seeds:
+        row = db.query(Hypothesis).filter(Hypothesis.hypothesis_id == spec["hypothesis_id"]).first()
+        if row is None:
+            db.add(Hypothesis(**spec))
+    db.commit()
+
+
+def rebuild_graph(db: Session) -> Dict[str, int]:
+    """Project the persisted entities and relationships into the NetworkX index."""
+    knowledge_graph.clear()
+
+    entities = db.query(Entity).all()
+    for entity in entities:
+        props = dict(entity.properties or {})
+        props["aliases"] = entity.aliases or []
+        if entity.latitude is not None:
+            props["latitude"] = entity.latitude
+            props["longitude"] = entity.longitude
+        knowledge_graph.add_entity(
+            entity_id=entity.entity_id,
+            label=entity.label,
+            entity_type=entity.entity_type,
+            case_id=entity.case_id,
+            properties=props,
+        )
+
+    relationships = db.query(Relationship).all()
+    known = {e.entity_id for e in entities}
+    for rel in relationships:
+        if rel.source_id not in known or rel.target_id not in known:
+            continue
+        knowledge_graph.add_relationship(
+            rel_id=rel.rel_id,
+            source_id=rel.source_id,
+            target_id=rel.target_id,
+            rel_type=rel.rel_type,
+            case_id=rel.case_id,
+            confidence=rel.confidence or 1.0,
+            evidence_ids=rel.evidence_ids or [],
+            properties={
+                "assertion_kind": rel.assertion_kind,
+                "valid_from": rel.valid_from.isoformat() if rel.valid_from else None,
+                **(rel.properties or {}),
+            },
+        )
+
+    return {"entities": len(entities), "relationships": len(relationships)}
+
+
+def seed_database_and_graph(db: Session) -> Dict[str, Any]:
+    _seed_users(db)
+    _seed_cases(db)
+    _seed_entities(db)
+    _seed_relationships(db)
+    _seed_events(db)
+    _seed_documents_and_evidence(db)
+    _seed_osint(db)
+    _seed_hypotheses(db)
+    counts = rebuild_graph(db)
+
+    summary = {
+        "entities": counts["entities"],
+        "relationships": counts["relationships"],
+        "events": db.query(Event).count(),
+        "documents": db.query(Document).count(),
+        "osint_records": db.query(OsintRecord).count(),
+        "seeded_at": datetime.now(timezone.utc).isoformat(),
+    }
+    print(
+        f">> SPEMASS dataset loaded: {summary['entities']} entities, "
+        f"{summary['relationships']} relationships, {summary['events']} events, "
+        f"{summary['documents']} documents."
+    )
+    return summary

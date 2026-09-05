@@ -1,0 +1,13 @@
+PUBLIC SOURCE RECORD OSINT-0011
+Source: Free zone registry extract (synthetic mirror)
+Reference: https://example-registry.invalid/fze/meridian-trade
+Source type: CORPORATE_REGISTRY
+Published: 2022-01-17T00:00:00
+Assessed reliability: 0.85
+Reported by 0 further outlets carrying the same text.
+
+Extracted claims:
+  - Meridian Trade FZE was registered on 17 January 2022.
+  - A director is recorded under the name Neha Kapoor.
+
+Potential external match. Human verification required.

@@ -1,0 +1,8 @@
+SYNTHETIC METRO NATIONAL BANK - LEDGER EXTRACT
+Account 10110, Zenith Holdings Pvt Ltd
+Account 99218, Apex Global Logistics
+
+TX-9871  2024-02-11 10:00  10110 to 99218   USD 50,000   narrative: advance
+TX-9902  2024-02-15 09:15  99218 to SW-77   USD 250,000  narrative: equipment procurement, beneficiary Alpine Holdings AG Zurich, authorised by A. Shahani
+
+No supporting invoice was lodged with the bank for TX-9902.

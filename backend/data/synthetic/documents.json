@@ -1,0 +1,68 @@
+[
+  {
+    "document_id": "DOC-FIR-2024-001",
+    "case_id": "CASE-2024-8812",
+    "evidence_id": "EVID-DOC-FIR-01",
+    "filename": "fir_8812_2024.txt",
+    "title": "First information report 8812/2024",
+    "file_type": "REPORT",
+    "uploaded_by": "rajiv_sen",
+    "created_at": "2024-02-18T09:15:00Z",
+    "extracted_text": "FIRST INFORMATION REPORT 8812/2024\nRegistered 18 February 2024.\n\nA complaint received from the financial intelligence desk reports that Zenith Holdings Pvt Ltd, registered at a commercial address in New Delhi and having Vikram Malhotra as its director, transferred funds to Apex Global Logistics on 11 February 2024. Apex Global Logistics, whose finance director is Amit Shahani, subsequently remitted USD 250,000 to Alpine Holdings AG in Zurich on 15 February 2024.\n\nVehicle DL-04-E-5544 is registered to Zenith Holdings Pvt Ltd.\n\nThe complaint does not establish the purpose of either transfer. No determination of wrongdoing has been made. Investigation is directed towards establishing the commercial basis, if any, for the remittance."
+  },
+  {
+    "document_id": "DOC-WITNESS-2024-002",
+    "case_id": "CASE-2024-8812",
+    "evidence_id": "EVID-DOC-WITNESS-01",
+    "filename": "witness_statement_mehra.txt",
+    "title": "Witness statement of Karan Mehra, driver",
+    "file_type": "STATEMENT",
+    "uploaded_by": "rajiv_sen",
+    "created_at": "2024-02-20T14:00:00Z",
+    "extracted_text": "STATEMENT OF KARAN MEHRA, RECORDED 20 FEBRUARY 2024\n\nI am employed as a driver by Zenith Holdings. On 14 February 2024 I received a telephone call from Mr Vikram Malhotra. He told me he was in Dubai and asked me to hand the keys of vehicle DL-04-E-5544 to Mr Rahul Sharma. I did so at about five in the evening. I did not see Mr Malhotra at any time that day.\n\nI do not know where the vehicle went afterwards."
+  },
+  {
+    "document_id": "DOC-CCTV-2024-014",
+    "case_id": "CASE-2024-8812",
+    "evidence_id": "EVID-CCTV-01",
+    "filename": "cctv_transcript_aerocity.txt",
+    "title": "Closed circuit footage transcript, Hotel Grand Palace Aerocity",
+    "file_type": "TRANSCRIPT",
+    "uploaded_by": "tech_forensics",
+    "created_at": "2024-02-19T11:00:00Z",
+    "extracted_text": "TRANSCRIPT OF CLOSED CIRCUIT FOOTAGE\nLocation: Hotel Grand Palace, Aerocity. Date: 14 February 2024.\n\n19:15 Camera 4. A dark sport utility vehicle bearing registration DL-04-E-5544 enters the forecourt. One male occupant leaves the vehicle and enters the lobby.\n19:30 Camera 9. The same individual is seated at table 12 in the lounge with a second male. Hotel duty staff identified the two, on being shown the footage, as Vikram Malhotra and Amit Shahani. The identification rests on staff recognition and has not been independently confirmed by biometric means.\n20:12 Camera 9. A tablet-sized device passes from the second individual to the first. The contents of the device are not visible on the footage.\n20:45 Camera 4. The first individual leaves in the same vehicle."
+  },
+  {
+    "document_id": "DOC-BANK-2024-003",
+    "case_id": "CASE-2024-8812",
+    "evidence_id": "EVID-BANK-01",
+    "filename": "bank_ledger_feb2024.txt",
+    "title": "Bank ledger extract, February 2024",
+    "file_type": "LEDGER",
+    "uploaded_by": "financial_desk",
+    "created_at": "2024-02-19T16:30:00Z",
+    "extracted_text": "SYNTHETIC METRO NATIONAL BANK - LEDGER EXTRACT\nAccount 10110, Zenith Holdings Pvt Ltd\nAccount 99218, Apex Global Logistics\n\nTX-9871  2024-02-11 10:00  10110 to 99218   USD 50,000   narrative: advance\nTX-9902  2024-02-15 09:15  99218 to SW-77   USD 250,000  narrative: equipment procurement, beneficiary Alpine Holdings AG Zurich, authorised by A. Shahani\n\nNo supporting invoice was lodged with the bank for TX-9902."
+  },
+  {
+    "document_id": "DOC-CUSTOMS-2024-005",
+    "case_id": "CASE-2024-8812",
+    "evidence_id": "EVID-DOC-CUSTOMS-01",
+    "filename": "customs_query_response.txt",
+    "title": "Customs response regarding declared imports",
+    "file_type": "REPORT",
+    "uploaded_by": "rajiv_sen",
+    "created_at": "2024-02-26T10:00:00Z",
+    "extracted_text": "RESPONSE TO QUERY, CUSTOMS RECORDS DESK\nDated 26 February 2024.\n\nA search of import declarations filed by Apex Global Logistics for the period 1 January to 26 February 2024 returns no declaration corresponding to equipment procurement from a Swiss supplier.\n\nThis absence is not by itself evidence of wrongdoing. Declarations may be filed late, may be filed by a different importer of record, or the goods may not yet have shipped."
+  },
+  {
+    "document_id": "DOC-ARCHIVE-2023-001",
+    "case_id": "CASE-2023-1104",
+    "evidence_id": "EVID-DOC-ARCHIVE-01",
+    "filename": "golden_falcon_closing_note.txt",
+    "title": "Closing note, Operation Golden Falcon",
+    "file_type": "REPORT",
+    "uploaded_by": "admin",
+    "created_at": "2023-12-14T17:00:00Z",
+    "extracted_text": "CLOSING NOTE, OPERATION GOLDEN FALCON\nDated 14 December 2023.\n\nThe investigation examined consignments handled at the Nhava Sheva terminal by Golden Falcon Wharf Logistics. Persons of interest included Imran Sheikh and Farhan Qureshi. Call records placed a handset attributed to Vikram Malhotra at the terminal on 20 August 2023.\n\nThe matter is closed for want of corroboration. No adverse finding was recorded against any named individual."
+  }
+]
