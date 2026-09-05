@@ -35,43 +35,79 @@ export const CytoscapeGraph: React.FC<CytoscapeGraphProps> = ({
   const [pathResult, setPathResult] = useState<any | null>(null);
   const [isSearchingPath, setIsSearchingPath] = useState(false);
 
+  // The API emits entity types in upper case (PERSON, PHONE, ...). Matching on
+  // title case silently fell through to the grey default for every node.
   const getNodeColor = (type: string) => {
-    switch (type) {
-      case 'Person': return '#6366F1'; // Indigo
-      case 'Phone': return '#10B981'; // Emerald
-      case 'Vehicle': return '#F59E0B'; // Amber
-      case 'Organization': return '#8B5CF6'; // Purple
-      case 'Location': return '#EF4444'; // Red
-      case 'Account': return '#06B6D4'; // Cyan
-      case 'Case': return '#3B82F6'; // Blue
+    switch ((type || '').toUpperCase()) {
+      case 'PERSON': return '#6366F1'; // Indigo
+      case 'PHONE': return '#10B981'; // Emerald
+      case 'VEHICLE': return '#F59E0B'; // Amber
+      case 'ORGANIZATION': return '#8B5CF6'; // Purple
+      case 'LOCATION': return '#EF4444'; // Red
+      case 'ACCOUNT': return '#06B6D4'; // Cyan
+      case 'CASE': return '#3B82F6'; // Blue
       default: return '#9CA3AF';
     }
   };
 
-  const initCytoscape = (layoutName: string) => {
-    if (!containerRef.current) return;
+  // How many nodes of each type are actually in the case, for the filter labels.
+  const typeCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    graphData.nodes.forEach(n => {
+      const key = (n.entity_type || '').toUpperCase();
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [graphData]);
 
-    // Filter nodes if needed
-    const filteredNodes = graphData.nodes.filter(n => {
-      if (filterType !== 'ALL' && n.entity_type !== filterType) return false;
+  // The filter picks a focus set, but phones do not link to phones and accounts do
+  // not link to accounts - keeping only the matches would strand every node with no
+  // edges at all. So the focus set is drawn together with whatever it is directly
+  // connected to, and that context is dimmed so the focus still reads.
+  const visibleGraph = React.useMemo(() => {
+    const focusNodes = graphData.nodes.filter(n => {
+      if (filterType !== 'ALL' && (n.entity_type || '').toUpperCase() !== filterType) return false;
       if (searchTerm && !n.label.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return true;
     });
-    const nodeSet = new Set(filteredNodes.map(n => n.id));
+    const focusSet = new Set(focusNodes.map(n => n.id));
+    const isFiltered = filterType !== 'ALL' || searchTerm.trim().length > 0;
 
-    const filteredEdges = graphData.edges.filter(e => nodeSet.has(e.source) && nodeSet.has(e.target));
+    const contextSet = new Set<string>();
+    if (isFiltered) {
+      graphData.edges.forEach(e => {
+        if (focusSet.has(e.source) && !focusSet.has(e.target)) contextSet.add(e.target);
+        if (focusSet.has(e.target) && !focusSet.has(e.source)) contextSet.add(e.source);
+      });
+    }
+
+    const visibleNodes = graphData.nodes.filter(n => focusSet.has(n.id) || contextSet.has(n.id));
+    const nodeSet = new Set(visibleNodes.map(n => n.id));
+    const filteredEdges = graphData.edges.filter(
+      e => nodeSet.has(e.source) && nodeSet.has(e.target)
+    );
+
+    return { focusSet, contextSet, visibleNodes, filteredEdges, isFiltered };
+  }, [graphData, filterType, searchTerm]);
+
+  const initCytoscape = (layoutName: string) => {
+    if (!containerRef.current) return;
+
+    const { focusSet, visibleNodes, filteredEdges } = visibleGraph;
 
     const elements = [
-      ...filteredNodes.map(n => ({
+      ...visibleNodes.map(n => ({
         data: {
           id: n.id,
           label: n.label,
           type: n.entity_type,
           is_bridge: n.is_bridge,
           is_hub: n.is_hub,
+          is_context: !focusSet.has(n.id),
           centrality: n.centrality_score,
           raw: n
-        }
+        },
+        classes: focusSet.has(n.id) ? '' : 'context-node'
       })),
       ...filteredEdges.map(e => ({
         data: {
@@ -125,6 +161,18 @@ export const CytoscapeGraph: React.FC<CytoscapeGraphProps> = ({
             'text-rotation': 'autorotate',
             'text-margin-y': -8,
             'arrow-scale': 0.8
+          }
+        },
+        {
+          // One-hop context: present so the connections are visible, muted so it
+          // is obvious these are not what was filtered for.
+          selector: '.context-node',
+          style: {
+            'opacity': 0.45,
+            'width': 22,
+            'height': 22,
+            'font-size': '9px',
+            'color': '#9CA3AF'
           }
         },
         {
@@ -287,12 +335,12 @@ export const CytoscapeGraph: React.FC<CytoscapeGraphProps> = ({
             className="bg-dark-900 border border-gray-700 text-xs text-gray-300 rounded px-2 py-1 focus:outline-none"
           >
             <option value="ALL">All Types ({graphData.nodes.length})</option>
-            <option value="Person">Persons</option>
-            <option value="Phone">Phones</option>
-            <option value="Vehicle">Vehicles</option>
-            <option value="Organization">Organizations</option>
-            <option value="Account">Accounts</option>
-            <option value="Location">Locations</option>
+            <option value="PERSON">Persons ({typeCounts.PERSON || 0})</option>
+            <option value="PHONE">Phones ({typeCounts.PHONE || 0})</option>
+            <option value="VEHICLE">Vehicles ({typeCounts.VEHICLE || 0})</option>
+            <option value="ORGANIZATION">Organizations ({typeCounts.ORGANIZATION || 0})</option>
+            <option value="ACCOUNT">Accounts ({typeCounts.ACCOUNT || 0})</option>
+            <option value="LOCATION">Locations ({typeCounts.LOCATION || 0})</option>
           </select>
 
           {/* Shortest Path Studio Toggle Button */}
@@ -431,6 +479,23 @@ export const CytoscapeGraph: React.FC<CytoscapeGraphProps> = ({
 
       {/* Main Cytoscape Canvas */}
       <div ref={containerRef} className="w-full h-full" />
+
+      {/* What a filtered view is showing, and why the faded nodes are there */}
+      {visibleGraph.isFiltered && (
+        <div className="absolute bottom-3 right-3 z-10 bg-dark-800/95 backdrop-blur-md border border-gray-700 rounded-lg px-3 py-2 text-[10px] shadow-xl">
+          {visibleGraph.focusSet.size === 0 ? (
+            <span className="text-amber-300 font-semibold">
+              No entity matches this filter in {graphData.nodes.length} case nodes.
+            </span>
+          ) : (
+            <span className="text-gray-300">
+              <span className="font-bold text-white">{visibleGraph.focusSet.size}</span> matching ·{' '}
+              <span className="font-bold text-gray-400">{visibleGraph.contextSet.size}</span> connected (faded) ·{' '}
+              <span className="font-bold text-white">{visibleGraph.filteredEdges.length}</span> links
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Selected Entity Card Inspector Overlay */}
       {selectedNodeObj && (
