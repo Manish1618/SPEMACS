@@ -50,7 +50,19 @@ export const InvestigatorMap: React.FC<InvestigatorMapProps> = ({
 
   // Initialize Map
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current) return;
+
+    if (mapRef.current) {
+      try {
+        mapRef.current.remove();
+      } catch (e) {
+        console.warn('Map cleanup warning:', e);
+      }
+      mapRef.current = null;
+    }
+
+    // Reset container leaflet id if any
+    (mapContainerRef.current as any)._leaflet_id = null;
 
     const map = L.map(mapContainerRef.current, {
       center: [28.56, 77.14], // Delhi NCR Airport & Aerocity
@@ -82,10 +94,17 @@ export const InvestigatorMap: React.FC<InvestigatorMapProps> = ({
     mapRef.current = map;
 
     return () => {
-      map.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        try {
+          mapRef.current.remove();
+        } catch (e) {
+          console.warn('Map unmount cleanup:', e);
+        }
+        mapRef.current = null;
+      }
     };
   }, []);
+
 
   // Handle Map Style / Overlay Switching
   useEffect(() => {

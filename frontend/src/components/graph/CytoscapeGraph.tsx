@@ -176,9 +176,17 @@ export const CytoscapeGraph: React.FC<CytoscapeGraphProps> = ({
   useEffect(() => {
     initCytoscape(currentLayout);
     return () => {
-      if (cyRef.current) cyRef.current.destroy();
+      if (cyRef.current) {
+        try {
+          cyRef.current.destroy();
+        } catch (e) {
+          console.warn('Cytoscape destroy warning:', e);
+        }
+        cyRef.current = null;
+      }
     };
   }, [graphData, filterType, searchTerm, currentLayout]);
+
 
   // Handle selected node update & highlights
   useEffect(() => {
