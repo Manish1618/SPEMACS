@@ -2,6 +2,11 @@
 
 **Analysis Date:** 2026-09-05
 
+> **Authentication section superseded on 2026-09-06.** Every auth and access-control
+> concern recorded below has since been resolved; the entries are kept for history but
+> no longer describe the code. See **Resolved: authentication and access control**
+> at the end of this document before planning against any of them.
+
 ## Summary: PRD Promises vs Implementation Reality
 
 `PRD.md` and `planning.md` describe an ambitious 25-requirement MVP built on Neo4j, GraphRAG, pgvector, MinIO, PostgreSQL, permissioned blockchain, and enforced RBAC. The actual codebase in `backend/app/` implements a much smaller, heavily scripted/demo system. This is the single biggest concern in the repo — nearly every "concern" below traces back to this gap. Anyone planning new phases against this codebase should treat PRD.md/planning.md as aspirational, not descriptive.
@@ -134,3 +139,31 @@
 ---
 
 *Concerns audit: 2026-09-05*
+
+
+---
+
+## Resolved: authentication and access control (2026-09-06)
+
+The auth findings above predate the access-control work and are no longer accurate.
+Current state:
+
+| Concern as recorded above | Current state |
+|---|---|
+| "No RBAC middleware or dependency exists. Every API route is unauthenticated" | Every data route declares `Depends(get_current_user)`. There is no anonymous path: a request without a valid bearer token is rejected with 401. The demo fallback that resolved header-less requests to the first ADMIN row is gone. |
+| "`create_access_token` issues a JWT with only `sub`/`exp` (no role claim)" | Access tokens carry `sub`, `role`, `typ`, `ver`, `jti`, `iat`, `nbf`, `exp`. Authorisation still reads the role from the database rather than trusting the claim; `ver` is checked against `User.token_version` so a password change, deactivation or logout-everywhere invalidates tokens already in circulation. |
+| "`verify_password` accepts plaintext-equals-hash as valid" | Gone. Passwords are bcrypt with a per-password salt (`security.py`); pre-existing SHA-256 digests verify in constant time and are rehashed on the next successful login. |
+| "`/auth/me` ignores the authenticated caller entirely" | `/auth/me` resolves the caller through `get_current_user`. |
+| "CORS wide open (`allow_origins=["*"]`) with `allow_credentials=True`" | `allow_origins` is an explicit list from `settings.CORS_ORIGINS`. |
+| "Hardcoded default `SECRET_KEY` committed to source" | The placeholder is rejected outright. With `DEMO_MODE=false` the app refuses to start without a real `SECRET_KEY`; in demo mode it generates an ephemeral one per process. |
+| "`passlib[bcrypt]` is a declared dependency but never used" | bcrypt is used directly (the installed passlib does not work with bcrypt 5). `passlib` remains in `requirements.txt` and could now be dropped. |
+| "No case-tenancy / row-level isolation enforced" | `accessible_cases` / `require_case_access` scope every case-bearing route to the cases a user leads or is named on, and `PUT /cases/{case_id}/team` is the control that grants membership. |
+| "No tests for auth/security paths" | `backend/test_mvp.py` exercises login, case scoping and 403s on unauthorised cases. Dedicated regression tests for the header-less-request case were considered and deliberately left out of scope. |
+
+Added alongside those fixes: an httpOnly rotating refresh-cookie session with reuse
+detection, double-submit CSRF on the two cookie-authenticated routes, per-account
+lockout plus a per-IP login throttle, administrator-only user provisioning
+(`app/api/users.py`), and a `create_admin.py` bootstrap CLI.
+
+Still open: no second factor, and the login rate limiter keeps its counters in
+process memory, so it is per-worker.

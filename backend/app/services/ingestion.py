@@ -413,7 +413,11 @@ def rebuild_graph(db: Session) -> Dict[str, int]:
 
 
 def seed_database_and_graph(db: Session) -> Dict[str, Any]:
-    _seed_users(db)
+    # The synthetic investigator accounts carry published passwords, so they exist
+    # only in demo mode. A real deployment provisions its first administrator with
+    # backend/create_admin.py and everyone else through the /users API.
+    if settings.DEMO_MODE:
+        _seed_users(db)
     _seed_cases(db)
     _seed_entities(db)
     _seed_relationships(db)

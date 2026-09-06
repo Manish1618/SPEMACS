@@ -284,3 +284,108 @@ export interface OSINTRecord {
   verification_warning?: string;
   evidence_id: string;
 }
+
+// --- Authentication ---
+export type UserRole =
+  | 'ADMIN'
+  | 'CRIME_BRANCH_HEAD'
+  | 'LEAD_INVESTIGATOR'
+  | 'INVESTIGATOR'
+  | 'ANALYST'
+  | 'AUDITOR';
+
+export const USER_ROLES: UserRole[] = [
+  'ADMIN',
+  'CRIME_BRANCH_HEAD',
+  'LEAD_INVESTIGATOR',
+  'INVESTIGATOR',
+  'ANALYST',
+  'AUDITOR',
+];
+
+/** The signed-in caller, as returned by /auth/login, /auth/refresh and /auth/me. */
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  badge_number?: string | null;
+  accessible_cases: string[];
+}
+
+export interface LoginResult {
+  access_token: string;
+  token_type: string;
+  expires_in_minutes: number;
+  user: AuthUser;
+}
+
+export interface AuthConfig {
+  demo_mode: boolean;
+  demo_credentials: { username: string; password: string; role: string }[];
+  min_password_length: number;
+  access_token_expire_minutes: number;
+}
+
+/** A row in the administrator's user table. */
+export interface ManagedUser {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  badge_number?: string | null;
+  /** E.164, e.g. +919876543210. The number access alerts are texted to. */
+  phone_number?: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_login_at?: string | null;
+  is_locked: boolean;
+  accessible_cases: string[];
+}
+
+/** One row of the access record shown to administrators and the Crime Branch head. */
+export interface AccessLogEntry {
+  id: string;
+  username: string;
+  action: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  case_id?: string | null;
+  ip_address?: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+/** What the platform tried to send about an access event, and whether it landed. */
+export interface NotificationLogEntry {
+  id: string;
+  event_type: string;
+  severity: 'INFO' | 'HIGH';
+  channel: 'EMAIL' | 'SMS';
+  recipient: string;
+  recipient_username?: string | null;
+  subject?: string | null;
+  status: 'SENT' | 'FAILED' | 'SKIPPED';
+  error?: string | null;
+  provider?: string | null;
+  actor_username?: string | null;
+  created_at: string;
+}
+
+export interface AlertConfig {
+  alerts_enabled: boolean;
+  recipients: {
+    username: string;
+    full_name: string;
+    email: string;
+    phone_number?: string | null;
+    sms_reachable: boolean;
+  }[];
+  fallback_email?: string | null;
+  fallback_phone?: string | null;
+  email: { configured: boolean; host?: string | null; port: number; from: string; events: string };
+  sms: { provider: string; configured: boolean; from?: string | null; events: string };
+  privileged_roles: string;
+}

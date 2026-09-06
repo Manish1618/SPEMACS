@@ -1,16 +1,138 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # --- Auth Schemas ---
 class Token(BaseModel):
     access_token: str
     token_type: str
+    # Lets the browser schedule a silent refresh instead of waiting for a 401.
+    expires_in_minutes: int
     user: Dict[str, Any]
 
 class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=1, max_length=200)
+
+class AuthConfig(BaseModel):
+    """Public bootstrap for the login screen."""
+    demo_mode: bool
+    # Populated only while DEMO_MODE is on, so a production build never shows them.
+    demo_credentials: List[Dict[str, str]] = []
+    min_password_length: int
+    access_token_expire_minutes: int
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=200)
+    new_password: str = Field(..., min_length=1, max_length=200)
+
+# --- User administration (ADMIN only) ---
+# A light shape check rather than pydantic's EmailStr, which would pull in the
+# email-validator package for no benefit here.
+_EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+# CRIME_BRANCH_HEAD receives the access alerts. Whoever holds it is the
+# notification recipient, so changing who gets alerted is an admin action.
+VALID_ROLES = [
+    "ADMIN",
+    "CRIME_BRANCH_HEAD",
+    "LEAD_INVESTIGATOR",
+    "INVESTIGATOR",
+    "ANALYST",
+    "AUDITOR",
+]
+
+# E.164, e.g. +919876543210.
+_PHONE_PATTERN = r"^\+[1-9]\d{7,14}$"
+
+class UserOut(BaseModel):
+    id: str
     username: str
-    password: str
+    email: str
+    full_name: str
+    role: str
+    badge_number: Optional[str] = None
+    phone_number: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+    is_locked: bool = False
+    accessible_cases: List[str] = []
+
+    class Config:
+        from_attributes = True
+
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
+    email: str = Field(..., max_length=255, pattern=_EMAIL_PATTERN)
+    full_name: str = Field(..., min_length=1, max_length=255)
+    role: str = "INVESTIGATOR"
+    badge_number: Optional[str] = Field(None, max_length=100)
+    phone_number: Optional[str] = Field(None, pattern=_PHONE_PATTERN)
+    password: str = Field(..., min_length=1, max_length=200)
+
+    @field_validator("role")
+    @classmethod
+    def _known_role(cls, value: str) -> str:
+        if value not in VALID_ROLES:
+            raise ValueError(f"role must be one of: {', '.join(VALID_ROLES)}")
+        return value
+
+class UserUpdate(BaseModel):
+    email: Optional[str] = Field(None, max_length=255, pattern=_EMAIL_PATTERN)
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    role: Optional[str] = None
+    badge_number: Optional[str] = Field(None, max_length=100)
+    phone_number: Optional[str] = Field(None, pattern=_PHONE_PATTERN)
+    is_active: Optional[bool] = None
+    unlock: Optional[bool] = None
+
+    @field_validator("role")
+    @classmethod
+    def _known_role(cls, value):
+        if value is not None and value not in VALID_ROLES:
+            raise ValueError(f"role must be one of: {', '.join(VALID_ROLES)}")
+        return value
+
+class PasswordResetRequest(BaseModel):
+    new_password: str = Field(..., min_length=1, max_length=200)
+
+class TeamUpdate(BaseModel):
+    assigned_team: List[str] = []
+
+class AccessLogEntry(BaseModel):
+    id: str
+    username: str
+    action: str
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
+    case_id: Optional[str] = None
+    ip_address: Optional[str] = None
+    details: Dict[str, Any] = {}
+    # AuditLog names this column `timestamp`; the API exposes it as created_at
+    # so both logs read the same way on the client.
+    created_at: datetime = Field(..., validation_alias="timestamp")
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class NotificationLogEntry(BaseModel):
+    id: str
+    event_type: str
+    severity: str
+    channel: str
+    recipient: str
+    recipient_username: Optional[str] = None
+    subject: Optional[str] = None
+    status: str
+    error: Optional[str] = None
+    provider: Optional[str] = None
+    actor_username: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 # --- Case Schemas ---
 class CaseCreate(BaseModel):

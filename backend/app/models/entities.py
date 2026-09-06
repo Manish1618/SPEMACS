@@ -17,8 +17,50 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="INVESTIGATOR") # ADMIN, LEAD_INVESTIGATOR, INVESTIGATOR, ANALYST, AUDITOR
     badge_number = Column(String(100), nullable=True)
+    # E.164 (e.g. +919876543210). Used to reach the Crime Branch head by SMS.
+    phone_number = Column(String(32), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=get_utc_now)
+
+    # Brute-force controls. locked_until is set once failed_login_count reaches the
+    # configured threshold; both reset on a successful login.
+    failed_login_count = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime, nullable=True)
+    last_login_at = Column(DateTime, nullable=True)
+    password_changed_at = Column(DateTime, default=get_utc_now)
+
+    # Bumped on password change, logout-everywhere and deactivation. Access tokens
+    # carry the version they were minted under, so raising it revokes every token
+    # already in circulation without keeping a blacklist.
+    token_version = Column(Integer, default=0, nullable=False)
+
+    sessions = relationship(
+        "RefreshSession", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class RefreshSession(Base):
+    """One browser session, addressed by an opaque refresh token.
+
+    Only the SHA-256 of the token is stored, so a database read does not hand out
+    usable sessions. Every refresh rotates the token; presenting a token that has
+    already been rotated means it leaked, and revokes the whole chain.
+    """
+
+    __tablename__ = "refresh_sessions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    issued_at = Column(DateTime, default=get_utc_now, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    revoked_reason = Column(String(64), nullable=True)
+    rotated_from = Column(String(36), nullable=True)
+    ip_address = Column(String(64), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+
+    user = relationship("User", back_populates="sessions")
 
 class Case(Base):
     __tablename__ = "cases"
@@ -234,3 +276,29 @@ class LedgerBlock(Base):
     block_hash = Column(String(64), nullable=False, index=True)
     sealed_by = Column(String(100), nullable=False)
     timestamp = Column(DateTime, default=get_utc_now)
+
+
+class NotificationLog(Base):
+    """Every access alert the platform attempted to send.
+
+    Kept separate from AuditLog: the audit log records that an event happened,
+    this records that somebody was told about it, and whether that succeeded.
+    """
+
+    __tablename__ = "notification_log"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    event_type = Column(String(64), index=True, nullable=False)
+    severity = Column(String(16), default="INFO", nullable=False)  # INFO or HIGH
+    channel = Column(String(16), nullable=False)                   # EMAIL or SMS
+    recipient = Column(String(255), nullable=False)
+    recipient_username = Column(String(100), nullable=True)
+    subject = Column(String(255), nullable=True)
+    body = Column(Text, nullable=True)
+    # SENT, FAILED, or SKIPPED when no recipient or channel was configured.
+    status = Column(String(16), default="SENT", nullable=False)
+    error = Column(Text, nullable=True)
+    provider = Column(String(32), nullable=True)
+    actor_username = Column(String(100), index=True, nullable=True)
+    ip_address = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=get_utc_now, index=True)

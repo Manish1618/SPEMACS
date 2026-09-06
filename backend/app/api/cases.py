@@ -16,8 +16,9 @@ from app.models.entities import (
     Evidence,
     Hypothesis,
     OsintRecord,
+    User,
 )
-from app.schemas.schemas import CaseCreate, CaseResponse
+from app.schemas.schemas import CaseCreate, CaseResponse, TeamUpdate
 from app.services import ledger, retrieval
 from app.services.retrieval import AccessContext
 
@@ -35,7 +36,12 @@ def _with_counts(db: Session, case: Case) -> CaseResponse:
 def list_cases(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Only the cases this user is authorised to open."""
     allowed = accessible_cases(db, user)
-    cases = db.query(Case).filter(Case.case_id.in_(allowed)).all()
+    cases = (
+        db.query(Case)
+        .filter(Case.case_id.in_(allowed))
+        .order_by(Case.created_at, Case.case_id)
+        .all()
+    )
     return [_with_counts(db, c) for c in cases]
 
 
@@ -76,6 +82,64 @@ def create_case(
             case_id=payload.case_id,
             ip_address=request.client.host if request.client else "unknown",
             details={"title": payload.title},
+        )
+    )
+    db.commit()
+    db.refresh(case)
+    return _with_counts(db, case)
+
+
+@router.put("/{case_id}/team", response_model=CaseResponse)
+def update_team(
+    case_id: str,
+    payload: TeamUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Set who may open this case.
+
+    Team membership is what accessible_cases() reads, so this is the control that
+    actually grants or removes an investigator's access to a case. Restricted to
+    administrators and the case's own lead investigator.
+    """
+    case = db.query(Case).filter(Case.case_id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail="No such case.")
+
+    if user.role != "ADMIN" and case.lead_investigator != user.username:
+        raise HTTPException(
+            status_code=403,
+            detail="Only an administrator or this case's lead investigator can change the team.",
+        )
+
+    requested = list(dict.fromkeys(payload.assigned_team))  # de-duplicate, keep order
+    known = {
+        u.username
+        for u in db.query(User).filter(User.username.in_(requested), User.is_active.is_(True)).all()
+    }
+    unknown = [name for name in requested if name not in known]
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No active account for: {', '.join(unknown)}.",
+        )
+
+    # The lead investigator always keeps access to their own case.
+    if case.lead_investigator not in requested:
+        requested.append(case.lead_investigator)
+
+    previous = list(case.assigned_team or [])
+    case.assigned_team = requested
+    db.add(
+        AuditLog(
+            username=user.username,
+            action="UPDATE_CASE_TEAM",
+            resource_type="CASE",
+            resource_id=case_id,
+            case_id=case_id,
+            ip_address=request.client.host if request.client else "unknown",
+            details={"previous": previous, "current": requested},
         )
     )
     db.commit()

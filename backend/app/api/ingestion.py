@@ -144,7 +144,12 @@ def list_documents(
 ):
     allowed = accessible_cases(db, user)
     scope = [case_id] if case_id and case_id in allowed else allowed
-    return db.query(Document).filter(Document.case_id.in_(scope)).all()
+    return (
+        db.query(Document)
+        .filter(Document.case_id.in_(scope))
+        .order_by(Document.created_at, Document.document_id)
+        .all()
+    )
 
 
 @router.get("/documents/{document_id}", response_model=DocumentResponse)

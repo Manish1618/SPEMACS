@@ -40,7 +40,12 @@ def list_evidence(
 ):
     allowed = accessible_cases(db, user)
     scope = [case_id] if case_id and case_id in allowed else allowed
-    return db.query(Evidence).filter(Evidence.case_id.in_(scope)).all()
+    return (
+        db.query(Evidence)
+        .filter(Evidence.case_id.in_(scope))
+        .order_by(Evidence.created_at, Evidence.evidence_id)
+        .all()
+    )
 
 
 @router.get("/ledger", response_model=List[LedgerBlockOut])
@@ -150,7 +155,12 @@ def verify_all(
 ):
     allowed = accessible_cases(db, user)
     scope = [case_id] if case_id and case_id in allowed else allowed
-    items = db.query(Evidence).filter(Evidence.case_id.in_(scope)).all()
+    items = (
+        db.query(Evidence)
+        .filter(Evidence.case_id.in_(scope))
+        .order_by(Evidence.created_at, Evidence.evidence_id)
+        .all()
+    )
 
     results = [
         verify_evidence_integrity(db, item.evidence_id, performed_by=user.username)

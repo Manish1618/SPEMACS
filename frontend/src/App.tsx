@@ -11,14 +11,29 @@ import { OSINTModal } from './components/osint/OSINTModal';
 import { DocumentViewerModal } from './components/documents/DocumentViewerModal';
 import { CourtDossierModal } from './components/court/CourtDossierModal';
 import { EntityResolutionModal } from './components/resolution/EntityResolutionModal';
+import { UserAdminPanel } from './components/admin/UserAdminPanel';
+import { AccessLogPanel } from './components/admin/AccessLogPanel';
 import type { Case, GraphData, MapEvent, TimelineEvent, GraphNode, HighlightAction, EvidenceItem } from './types';
 import { api } from './lib/api';
+import { useAuth } from './context/AuthContext';
 
 import { Sparkles, X } from 'lucide-react';
 
 export const App: React.FC = () => {
+  // AuthGate only renders this once a session exists, so user is non-null here.
+  const { user, logout, refreshProfile } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  // The Crime Branch head is an oversight role: they read the access record but
+  // do not provision accounts.
+  const canOversee = isAdmin || user?.role === 'CRIME_BRANCH_HEAD';
+  const canIngest = isAdmin || user?.role === 'LEAD_INVESTIGATOR' || user?.role === 'INVESTIGATOR';
+
   const [cases, setCases] = useState<Case[]>([]);
-  const [activeCaseId, setActiveCaseId] = useState<string>('CASE-2024-8812');
+  // Start on a case this user is actually authorised to open rather than a
+  // hardcoded one they may have no access to.
+  const [activeCaseId, setActiveCaseId] = useState<string>(
+    () => user?.accessible_cases?.[0] ?? ''
+  );
   const [activeTab, setActiveTab] = useState<string>('workspace');
   const [isReseeding, setIsReseeding] = useState<boolean>(false);
   const [isCopilotDrawerOpen, setIsCopilotDrawerOpen] = useState<boolean>(false);
@@ -43,6 +58,10 @@ export const App: React.FC = () => {
 
   // Initial Data Fetch
   const loadCaseData = async (caseId: string) => {
+    if (!caseId) {
+      setCases(await api.getCases().catch(() => []));
+      return;
+    }
     try {
       const [casesList, gData, mEvents, tEvents, evData] = await Promise.all([
         api.getCases(),
@@ -65,6 +84,15 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadCaseData(activeCaseId);
   }, [activeCaseId]);
+
+  // Case membership can change under us (an admin edits the team), so keep the
+  // active case inside whatever this user is still authorised to open.
+  useEffect(() => {
+    const allowed = user?.accessible_cases ?? [];
+    if (allowed.length > 0 && !allowed.includes(activeCaseId)) {
+      setActiveCaseId(allowed[0]);
+    }
+  }, [user, activeCaseId]);
 
   // Handle Reseed
   const handleReseed = async () => {
@@ -156,15 +184,50 @@ export const App: React.FC = () => {
     }
   };
 
-  const currentCase = cases.find(c => c.case_id === activeCaseId) || {
-    case_id: activeCaseId,
-    title: 'Operation ShadowNet: Hawala Syndicate & Inter-State Smuggling',
-    classification: 'RESTRICTED',
-    status: 'ACTIVE',
-    lead_investigator: 'Inspector Rajiv Sen',
-    assigned_team: ['rajiv_sen'],
-    created_at: new Date().toISOString()
+  // No fabricated fallback: showing a case record the caller may not be
+  // authorised to see would contradict the access model the backend enforces.
+  const currentCase = cases.find(c => c.case_id === activeCaseId) ?? null;
+
+  const handleLogout = () => {
+    void logout();
   };
+
+  // Oversight roles always reach the app, even with no cases: an administrator
+  // needs Access Control to assign anyone, and the Crime Branch head needs the
+  // Access Record, neither of which depends on case membership.
+  if (!canOversee && (user?.accessible_cases?.length ?? 0) === 0) {
+    return (
+      <div className="flex flex-col h-screen w-screen bg-dark-900 text-gray-100 overflow-hidden">
+        <Header
+          cases={[]}
+          activeCaseId=""
+          onSelectCase={setActiveCaseId}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          onReseed={handleReseed}
+          isReseeding={isReseeding}
+          onOpenDocViewer={() => setIsDocViewerOpen(true)}
+          onOpenResolution={() => setIsResolutionOpen(true)}
+          onOpenDossier={() => setIsDossierOpen(true)}
+          user={user}
+          onLogout={handleLogout}
+          canReseed={isAdmin}
+          canIngest={canIngest}
+          canAdminister={isAdmin}
+        />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="max-w-sm text-center space-y-2">
+            <h2 className="text-sm font-bold text-white">No cases assigned</h2>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Your account is active but is not on the team of any case yet. An
+              administrator or a case's lead investigator has to add you before any
+              case material becomes visible.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen bg-dark-900 text-gray-100 overflow-hidden select-none">
@@ -180,6 +243,12 @@ export const App: React.FC = () => {
         onOpenDocViewer={() => setIsDocViewerOpen(true)}
         onOpenResolution={() => setIsResolutionOpen(true)}
         onOpenDossier={() => setIsDossierOpen(true)}
+        user={user}
+        onLogout={handleLogout}
+        canReseed={isAdmin}
+        canIngest={canIngest}
+        canAdminister={isAdmin}
+        canOversee={canOversee}
       />
 
       {/* Main Workspace Body */}
@@ -282,10 +351,23 @@ export const App: React.FC = () => {
           />
         )}
 
-        {activeTab === 'ingestion' && (
+        {activeTab === 'ingestion' && canIngest && (
           <IngestionHub
             activeCaseId={activeCaseId}
             onRefresh={() => loadCaseData(activeCaseId)}
+          />
+        )}
+
+        {activeTab === 'access' && canOversee && <AccessLogPanel />}
+
+        {activeTab === 'admin' && isAdmin && (
+          <UserAdminPanel
+            cases={cases}
+            activeCaseId={activeCaseId}
+            onTeamChanged={() => {
+              void refreshProfile();
+              void loadCaseData(activeCaseId);
+            }}
           />
         )}
       </main>
@@ -306,9 +388,9 @@ export const App: React.FC = () => {
 
       {/* Court-Admissible Case Dossier Modal */}
       <CourtDossierModal
-        isOpen={isDossierOpen}
+        isOpen={isDossierOpen && currentCase !== null}
         onClose={() => setIsDossierOpen(false)}
-        currentCase={currentCase}
+        currentCase={currentCase as Case}
         timelineEvents={timelineEvents}
         evidenceList={evidenceList}
       />

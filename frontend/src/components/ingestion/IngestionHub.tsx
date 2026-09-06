@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Upload, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { api, ApiError } from '../../lib/api';
 
 interface IngestionHubProps {
   activeCaseId: string;
@@ -20,24 +21,17 @@ export const IngestionHub: React.FC<IngestionHubProps> = ({ activeCaseId, onRefr
     setIsUploading(true);
     setUploadStatus(null);
 
-    const formData = new FormData();
-    formData.append('case_id', activeCaseId);
-    formData.append('title', fileTitle);
-    formData.append('file_type', fileType);
-    formData.append('file', selectedFile);
-
     try {
-      const res = await fetch('http://localhost:8000/api/v1/ingestion/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
+      // Goes through the shared client so the upload carries the caller's token.
+      const data = await api.uploadDocument(activeCaseId, fileTitle, fileType, selectedFile);
       setUploadStatus(data);
       setFileTitle('');
       setSelectedFile(null);
       onRefresh();
     } catch (err) {
-      console.error(err);
+      setUploadStatus({
+        error: err instanceof ApiError ? err.message : 'The upload failed.'
+      });
     } finally {
       setIsUploading(false);
     }
@@ -126,7 +120,14 @@ export const IngestionHub: React.FC<IngestionHubProps> = ({ activeCaseId, onRefr
         </form>
 
         {/* Upload Success Alert */}
-        {uploadStatus && (
+        {uploadStatus?.error && (
+          <div className="p-4 bg-red-950/40 border border-red-500/50 rounded-xl flex items-start space-x-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+            <span className="text-xs text-red-300 leading-relaxed">{uploadStatus.error}</span>
+          </div>
+        )}
+
+        {uploadStatus && !uploadStatus.error && (
           <div className="p-4 bg-emerald-950/40 border border-emerald-500/50 rounded-xl space-y-2">
             <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs">
               <CheckCircle2 className="w-4 h-4" />

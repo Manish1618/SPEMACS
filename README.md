@@ -59,20 +59,38 @@ briefs and the cross-case engine.
 
 ---
 
-## Seeded accounts
+## Signing in
 
-Synthetic demo credentials, created on first startup. Case access differs by
-account on purpose — it is what the authorisation tests exercise.
+Every route except `/health` and `/api/v1/auth/config` requires an authenticated
+investigator. The app opens on a login screen.
 
-| Username | Password | Role | Cases |
-|---|---|---|---|
-| `admin` | `admin123` | ADMIN | both |
-| `rajiv_sen` | `investigator123` | LEAD_INVESTIGATOR | both |
-| `ananya_rao` | `analyst123` | ANALYST | ShadowNet only |
-| `auditor` | `auditor123` | AUDITOR | both |
+**In demo mode** (`DEMO_MODE=true`, the default) four synthetic accounts are
+seeded on startup and the login screen lists them — click one to fill the form.
+Case access differs by account on purpose; it is what the authorisation tests
+exercise. Their passwords live in `backend/app/services/ingestion.py` and are
+served by `/api/v1/auth/config` only while demo mode is on.
+
+**Outside demo mode** (`DEMO_MODE=false`) no accounts are seeded at all. Create
+the first administrator, then provision everyone else from the **Access Control**
+tab:
+
+```bash
+cd backend
+python create_admin.py
+```
 
 Two cases are seeded: **CASE-2024-8812** (Operation ShadowNet, active) and
 **CASE-2023-1104** (Operation Golden Falcon, archived).
+
+### How the session works
+
+`POST /auth/login` returns a 15-minute access token, which the browser holds in
+memory and sends as a Bearer header, plus an httpOnly `SameSite=Strict` refresh
+cookie that script cannot read. `POST /auth/refresh` trades the cookie for a new
+access token and rotates the cookie; replaying a rotated token revokes the whole
+chain. A reload therefore keeps you signed in without a token ever sitting in
+`localStorage`. Five failed sign-ins lock an account for fifteen minutes, and
+every attempt is written to the audit log.
 
 ---
 
@@ -121,14 +139,17 @@ criminality from association.
 
 ## Known limitations
 
-- **Authentication is bypassed for the prototype.** A request with no bearer
-  token resolves to the first ADMIN account (`app/core/security.py`), so the
-  case-level authorisation checks pass unconditionally for unauthenticated
-  callers. The scoping logic itself is correct and tested — it only takes effect
-  once the frontend sends the token from `/auth/login`. Remove that fallback
-  before this runs anywhere real.
-- `SECRET_KEY` has a public default committed in `config.py`. Set your own in
-  `.env` before exposing the API beyond localhost.
+- **Sessions are single-process.** The login rate limiter keeps its counters in
+  memory (`app/core/ratelimit.py`), so behind several uvicorn workers each worker
+  enforces its own window. Move it to Redis before scaling out. Per-account
+  lockout is in the database and is unaffected.
+- **No second factor.** Sign-in is username and password only.
+- **Set `COOKIE_SECURE=true` behind HTTPS.** It defaults to false so the refresh
+  cookie works over plain HTTP on localhost.
+- **`DEMO_MODE` must be off in production.** With it on, four accounts with
+  published passwords are seeded on every startup and advertised by
+  `/auth/config`. With it off the API refuses to start unless `SECRET_KEY` is set
+  to something other than the placeholder in the repository.
 - PDF and image text extraction needs optional extras (`pypdf`, `pytesseract`,
   `Pillow`, plus the tesseract binary). Without them the API runs normally and
   reports that extraction is unavailable.
