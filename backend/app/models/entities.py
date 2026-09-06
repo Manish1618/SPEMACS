@@ -5,7 +5,15 @@ from sqlalchemy.orm import relationship
 from app.models.database import Base
 
 def get_utc_now():
-    return datetime.now(timezone.utc)
+    """UTC, without tzinfo.
+
+    Every DateTime column here is timezone-naive, and the whole codebase reads
+    them back as UTC. Handing SQLAlchemy an aware value instead makes psycopg
+    convert it to the server's local zone and drop the offset, which silently
+    shifted every stored timestamp by the local UTC offset on PostgreSQL while
+    looking correct on SQLite.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class User(Base):
     __tablename__ = "users"

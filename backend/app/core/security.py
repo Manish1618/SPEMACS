@@ -49,14 +49,22 @@ _DUMMY_HASH = bcrypt.hashpw(b"timing-equaliser", bcrypt.gensalt(rounds=12)).deco
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    """UTC without tzinfo - the form every DateTime column here stores.
+
+    Aware values must not reach the database: psycopg converts them to the
+    server's local zone for a timezone-naive column and drops the offset, which
+    shifts every timestamp by the local UTC offset.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _aware(value: Optional[datetime]) -> Optional[datetime]:
-    """SQLite hands back naive datetimes; compare them as UTC."""
+def _naive_utc(value: Optional[datetime]) -> Optional[datetime]:
+    """Normalise anything read back from the database to naive UTC."""
     if value is None:
         return None
-    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 # --- Passwords ---------------------------------------------------------------
@@ -139,7 +147,7 @@ def validate_password_strength(password: str, username: str = "") -> None:
 
 def lockout_remaining(user) -> Optional[timedelta]:
     """How long this account stays locked, or None when it is not locked."""
-    locked_until = _aware(user.locked_until)
+    locked_until = _naive_utc(user.locked_until)
     if locked_until is None:
         return None
     remaining = locked_until - _now()
@@ -172,7 +180,8 @@ def create_access_token(
     token_version: int = 0,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
-    issued = _now()
+    # Aware on purpose: these become epoch claims in the token, not column values.
+    issued = datetime.now(timezone.utc)
     expire = issued + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
@@ -365,7 +374,7 @@ def resolve_refresh_session(db: Session, raw_token: str) -> Tuple[Any, Any]:
         _revoke_chain(db, session, "reuse_detected")
         raise unauthorized
 
-    if _aware(session.expires_at) <= _now():
+    if _naive_utc(session.expires_at) <= _now():
         _revoke(db, session, "expired")
         db.commit()
         raise unauthorized
