@@ -47,7 +47,7 @@ export const LoginScreen: React.FC = () => {
       setIsLocked(apiError?.status === 423);
       setError(
         apiError?.message ??
-          'Could not reach the SPEMASS server. Check that the API is running.'
+          'Could not reach the SPEMACS server. Check that the API is running.'
       );
       setPassword('');
     } finally {
@@ -70,7 +70,7 @@ export const LoginScreen: React.FC = () => {
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-700 flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-4">
             <Shield className="w-7 h-7 text-white" />
           </div>
-          <h1 className="font-bold text-2xl tracking-wider text-white">SPEMASS</h1>
+          <h1 className="font-bold text-2xl tracking-wider text-white">SPEMACS</h1>
           <p className="text-[11px] text-gray-500 mt-1.5 text-center leading-relaxed">
             Secure Pattern &amp; Evidence Mapping and Analysis of Suspicious Structures
           </p>

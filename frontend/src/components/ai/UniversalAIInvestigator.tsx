@@ -26,7 +26,7 @@ export const UniversalAIInvestigator: React.FC<UniversalAIInvestigatorProps> = (
     {
       role: 'assistant',
       content: [
-        "Hello Inspector. I am the **SPEMASS Universal AI Investigator**, running a **Dynamic Investigation Query Planner** over the case knowledge graph, scanned FIRs, CCTV transcripts, CDR tower telemetry, bank ledgers and authorized OSINT.",
+        "Hello Inspector. I am the **SPEMACS Universal AI Investigator**, running a **Dynamic Investigation Query Planner** over the case knowledge graph, scanned FIRs, CCTV transcripts, CDR tower telemetry, bank ledgers and authorized OSINT.",
         "",
         "Two ways to work:",
         "- Ask anything in your own words and I answer the question you asked, with citations.",

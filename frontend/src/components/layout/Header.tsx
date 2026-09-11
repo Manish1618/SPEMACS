@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-base tracking-wider text-white">SPEMASS</span>
+                <span className="font-bold text-base tracking-wider text-white">SPEMACS</span>
                 <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-mono border border-indigo-500/30">
                   AI Decision Support
                 </span>

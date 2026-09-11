@@ -22,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("SPEMASS React Uncaught Error:", error, errorInfo);
+    console.error("SPEMACS React Uncaught Error:", error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen w-screen bg-slate-950 text-white flex flex-col items-center justify-center p-8">
           <div className="max-w-2xl w-full bg-slate-900 border border-red-500/40 rounded-xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center space-x-3 text-red-400">
-              <span className="text-2xl font-bold">⚠️ SPEMASS Frontend Error Encountered</span>
+              <span className="text-2xl font-bold">⚠️ SPEMACS Frontend Error Encountered</span>
             </div>
             <p className="text-sm text-gray-300">
               An unhandled exception occurred during component render. Diagnostic details below:

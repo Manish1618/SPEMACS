@@ -305,7 +305,7 @@ export const CytoscapeGraph: React.FC<CytoscapeGraphProps> = ({
     if (!cyRef.current) return;
     const png64 = cyRef.current.png({ full: true, scale: 2, bg: '#0B0F17' });
     const link = document.createElement('a');
-    link.download = `SPEMASS_Graph_Export_${Date.now()}.png`;
+    link.download = `SPEMACS_Graph_Export_${Date.now()}.png`;
     link.href = png64;
     link.click();
   };
