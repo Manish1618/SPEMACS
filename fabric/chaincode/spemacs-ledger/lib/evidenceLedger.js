@@ -143,23 +143,39 @@ class EvidenceLedger extends Contract {
             ? JSON.parse(existingRaw.toString())
             : null;
 
-        // Re-sealing an id under a different digest is a real event, not an
-        // error -- re-registration happens. It is written as a new version so
-        // the history shows the digest changing, and who changed it.
+        // Only a seal may set the attested digest.
+        //
+        // This matters more than it looks. A custody transfer or an integrity
+        // audit carries the digest it OBSERVED, which during a tamper event is
+        // the altered one. Letting that overwrite the anchor would mean an audit
+        // rewrites the very value it exists to attest -- after which the ledger
+        // would happily agree with the tampered artifact. The anchored digest is
+        // therefore carried forward untouched, and what an audit saw is recorded
+        // separately as observedSha256.
+        //
+        // Re-sealing an id under a different digest is still a real event, not an
+        // error: re-registration happens, and it is written as a new version so
+        // the history shows the digest changing and who changed it.
+        const isSeal = kind === 'EVIDENCE_SEALED';
+        const attestedSha256 = isSeal
+            ? (payload.sha256 || (existing ? existing.sha256 : null))
+            : (existing ? existing.sha256 : payload.sha256 || null);
+
         const record = {
             docType: 'anchor',
             evidenceId: evidenceId,
             caseId: payload.case_id || (existing ? existing.caseId : null),
             kind: kind,
             action: payload.action || kind,
-            sha256: payload.sha256 || (existing ? existing.sha256 : null),
+            sha256: attestedSha256,
+            observedSha256: isSeal ? null : (payload.sha256 || null),
             actor: payload.actor || payload.custodian || 'unknown',
             occurredAt: payload.occurred_at || payload.sealed_at || this._txTime(ctx),
             details: payload.details || {},
             anchorId: anchorId,
             txId: ctx.stub.getTxID(),
             recordedAt: this._txTime(ctx),
-            sealCount: existing ? (existing.sealCount || 0) + 1 : 1
+            sealCount: (existing ? (existing.sealCount || 0) : 0) + (isSeal ? 1 : 0)
         };
 
         await ctx.stub.putState(key, Buffer.from(JSON.stringify(record)));

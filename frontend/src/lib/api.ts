@@ -2,8 +2,10 @@ import { authStore, hasSessionCookie, readCsrfToken } from './authStore';
 import type {
   AccessLogEntry,
   AlertConfig,
+  AnchoringStatus,
   AuthConfig,
   AuthUser,
+  FabricAnchor,
   LoginResult,
   ManagedUser,
   NotificationLogEntry,
@@ -315,6 +317,21 @@ export const api = {
     return request<any>(`/evidence/${encodeURIComponent(evidenceId)}/restore-clean`, {
       method: 'POST',
     });
+  },
+
+  // Permissioned ledger anchoring. These describe a store outside the SPEMACS
+  // database, so an answer from here is a second opinion rather than an echo.
+  async getAnchoringStatus(): Promise<AnchoringStatus> {
+    return request<AnchoringStatus>('/evidence/ledger/anchoring');
+  },
+  async getFabricAnchor(evidenceId: string): Promise<FabricAnchor> {
+    return request<FabricAnchor>(
+      `/evidence/${encodeURIComponent(evidenceId)}/fabric-anchor`
+    );
+  },
+  /** Deliver queued anchors now instead of waiting for the worker. ADMIN only. */
+  async drainAnchors() {
+    return request<any>('/evidence/ledger/drain', { method: 'POST' });
   },
 
   // Universal AI Investigator

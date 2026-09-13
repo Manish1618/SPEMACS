@@ -389,3 +389,69 @@ export interface AlertConfig {
   sms: { provider: string; configured: boolean; from?: string | null; events: string };
   privileged_roles: string;
 }
+
+// --- Permissioned ledger anchoring -----------------------------------------
+// These describe Hyperledger Fabric chaincode, which is a store outside the
+// SPEMACS database. `mode: "stub"` means the in-memory dev server answered:
+// real contract code, but no consensus and no second organisation, so it
+// proves logic only and must never be presented as a tamper-resistant record.
+
+export interface AnchoringOutbox {
+  enabled: boolean;
+  pending: number;
+  anchored: number;
+  failed: number;
+  detail: string;
+}
+
+export interface AnchoringStatus {
+  enabled: boolean;
+  reachable?: boolean;
+  detail: string;
+  channel?: string | null;
+  chaincode?: string | null;
+  msp_id?: string | null;
+  mode?: string;
+  outbox?: AnchoringOutbox;
+}
+
+export interface FabricAnchorRecord {
+  evidenceId: string;
+  caseId: string | null;
+  kind: string;
+  action: string;
+  sha256: string | null;
+  actor: string;
+  occurredAt: string;
+  txId: string;
+  recordedAt: string;
+  sealCount: number;
+}
+
+export interface FabricAnchorHistoryEntry {
+  txId: string;
+  timestamp: string | null;
+  isDelete: boolean;
+  value: FabricAnchorRecord | null;
+}
+
+export interface FabricVerification {
+  checked: boolean;
+  match?: boolean;
+  anchored_sha256?: string | null;
+  tx_id?: string | null;
+  detail?: string;
+}
+
+export interface FabricAnchor {
+  evidence_id: string;
+  enabled: boolean;
+  reachable?: boolean;
+  channel?: string | null;
+  chaincode?: string | null;
+  anchor: FabricAnchorRecord | null;
+  history: FabricAnchorHistoryEntry[];
+  verification?: FabricVerification;
+  unanchored_entries?: number;
+  detail: string;
+}
