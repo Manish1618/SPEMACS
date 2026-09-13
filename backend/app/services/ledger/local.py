@@ -1,4 +1,12 @@
-"""Permissioned append-only integrity ledger.
+"""Local append-only integrity ledger -- the synchronous backend.
+
+This is one of two ledger backends. It is always active: every anchor lands here
+first, inside the caller's own database transaction, so an evidence write can
+never fail because a ledger is unreachable. The Fabric backend
+(app/services/ledger/fabric.py) attests the same records independently and
+asynchronously, via the outbox in app/services/ledger/outbox.py.
+
+Read app/services/ledger/__init__.py for how the two compose.
 
 Replaces the previous placeholder, which minted a random hex string per evidence
 item and called it a transaction hash -- nothing was chained, so nothing could be

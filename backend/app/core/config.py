@@ -110,6 +110,31 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{_BASE_DIR}/spemass.db"
     GEMINI_API_KEY: str = ""
 
+    # --- Hyperledger Fabric anchoring ------------------------------------
+    # Off by default. With it off the local hash-chained ledger is the whole
+    # story and the app runs exactly as before -- no gateway, no Docker, no
+    # network. With it on, every local block is additionally anchored to
+    # chaincode through the Node gateway, asynchronously, via the outbox.
+    #
+    # Fabric being unreachable is never fatal: anchors queue as PENDING and the
+    # drain worker delivers them when it comes back. Evidence writes do not
+    # block on consensus.
+    FABRIC_ENABLED: bool = False
+    FABRIC_GATEWAY_URL: str = "http://127.0.0.1:7090"
+
+    # Shared secret for the gateway's Bearer check. The gateway holds the Fabric
+    # identity material; this only stops anything else on the host calling it.
+    FABRIC_GATEWAY_TOKEN: str = ""
+
+    FABRIC_CHANNEL: str = "spemacs"
+    FABRIC_CHAINCODE: str = "spemacs-ledger"
+    FABRIC_TIMEOUT_SECONDS: int = 20
+
+    # Drain cadence and give-up threshold for the outbox worker.
+    FABRIC_DRAIN_INTERVAL_SECONDS: int = 20
+    FABRIC_DRAIN_BATCH_SIZE: int = 25
+    FABRIC_MAX_ATTEMPTS: int = 8
+
     model_config = SettingsConfigDict(
         # Absolute, so the settings resolve the same however the process was started.
         env_file=str(_BASE_DIR / ".env"),

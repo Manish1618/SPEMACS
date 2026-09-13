@@ -271,6 +271,49 @@ class OsintRecord(Base):
     created_at = Column(DateTime, default=get_utc_now)
 
 
+class LedgerAnchor(Base):
+    """Transactional outbox for Fabric anchoring.
+
+    A row is written in the *same* database transaction as the LedgerBlock it
+    refers to. That is the whole point: Postgres and Fabric cannot be committed
+    atomically together, so instead the intent to anchor is committed atomically
+    with the evidence, and a drain worker carries it to the chaincode afterwards.
+    Nothing is ever anchored that was not also recorded locally, and nothing
+    recorded locally is silently left unanchored -- a PENDING row that never
+    drains is visible rather than lost.
+
+    anchor_id is derived deterministically from the payload, so re-submitting an
+    entry the worker already delivered is a no-op on the chaincode side. That is
+    what makes retrying safe.
+    """
+
+    __tablename__ = "ledger_anchors"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    # Deterministic idempotency key: SHA-256 over the canonical payload.
+    anchor_id = Column(String(64), nullable=False, unique=True, index=True)
+
+    block_number = Column(Integer, nullable=False, index=True)
+    evidence_id = Column(String(64), nullable=True, index=True)
+    case_id = Column(String(64), nullable=True, index=True)
+    action = Column(String(64), nullable=False)
+    payload = Column(JSON, nullable=False)
+
+    # PENDING -> ANCHORED, or PENDING -> FAILED once attempts are exhausted.
+    status = Column(String(16), default="PENDING", nullable=False, index=True)
+    attempts = Column(Integer, default=0, nullable=False)
+    last_error = Column(Text, nullable=True)
+
+    # Populated by the chaincode response.
+    fabric_tx_id = Column(String(128), nullable=True, index=True)
+    fabric_channel = Column(String(64), nullable=True)
+    fabric_chaincode = Column(String(64), nullable=True)
+
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+    anchored_at = Column(DateTime, nullable=True)
+
+
 class LedgerBlock(Base):
     """Permissioned append-only ledger. Each block hash-chains to its predecessor,
     so altering any historic custody record invalidates every block after it."""

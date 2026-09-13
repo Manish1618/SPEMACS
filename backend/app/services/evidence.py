@@ -194,6 +194,21 @@ def verify_evidence_integrity(
 
     chain_state = ledger.verify_chain(db)
 
+    # Independent opinion from chaincode, when anchoring is switched on. This is
+    # the check the local chain cannot make on its own: it reads a store the
+    # SPEMACS database has no write access to, so a writer who edited both the
+    # evidence and the local ledger together is still caught here.
+    fabric_check = (
+        ledger.verify_against_fabric(evidence_id, recomputed_hash or stored_hash or "")
+        if ledger.fabric.enabled() and (recomputed_hash or stored_hash)
+        else {"checked": False, "detail": "Fabric anchoring is disabled."}
+    )
+    fabric_contradicts = (
+        fabric_check.get("checked") is True
+        and fabric_check.get("match") is False
+        and fabric_check.get("anchored_sha256")
+    )
+
     if not artifact_present:
         status, is_valid = "UNVERIFIED", False
         message = (
@@ -215,12 +230,33 @@ def verify_evidence_integrity(
     elif not chain_state["chain_valid"]:
         status, is_valid = "TAMPER_DETECTED", False
         message = f"INTEGRITY FAILURE: {chain_state['message']}"
+    elif fabric_contradicts:
+        status, is_valid = "TAMPER_DETECTED", False
+        message = (
+            "INTEGRITY FAILURE: the digest on this record does not match the digest anchored "
+            "to the permissioned ledger, which is held outside this database. The local record "
+            f"reads {(recomputed_hash or stored_hash)[:16]}...; the ledger holds "
+            f"{str(fabric_check.get('anchored_sha256'))[:16]}..."
+        )
     else:
         status, is_valid = "VERIFIED", True
         message = (
             "Evidence integrity confirmed. The artifact rehashes to the sealed SHA-256 value, "
-            "which matches the ledger anchor, and the ledger chain is unbroken. This attests "
-            "that the record is unaltered, not that its content is truthful."
+            "which matches the ledger anchor, and the ledger chain is unbroken."
+        )
+        if fabric_check.get("checked") and fabric_check.get("match"):
+            message += (
+                " The same digest is independently anchored on the permissioned Fabric ledger, "
+                "which is stored outside this database."
+            )
+        elif ledger.fabric.enabled():
+            # Say so plainly rather than implying an attestation we do not have.
+            message += (
+                " The distributed ledger could not be consulted for this check, so this "
+                "verdict rests on the local chain alone."
+            )
+        message += (
+            " This attests that the record is unaltered, not that its content is truthful."
         )
 
     evidence.integrity_status = status
@@ -253,6 +289,7 @@ def verify_evidence_integrity(
                 "ledger_hash": ledger_hash,
                 "chain_valid": chain_state["chain_valid"],
                 "ledger_block": block.block_number,
+                "fabric": fabric_check,
             },
             created_at=now,
         )
@@ -260,6 +297,7 @@ def verify_evidence_integrity(
     db.commit()
 
     return {
+        "fabric_verification": fabric_check,
         "evidence_id": evidence_id,
         "title": evidence.title,
         "stored_hash": stored_hash,

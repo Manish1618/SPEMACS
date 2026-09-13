@@ -5,9 +5,15 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.core.security import accessible_cases, get_current_user, require_case_access, require_role
+from app.core.security import (
+    accessible_cases,
+    get_current_user,
+    require_admin,
+    require_case_access,
+    require_role,
+)
 from app.models.database import get_db
-from app.models.entities import AuditLog, CustodyEvent, Evidence, LedgerBlock
+from app.models.entities import AuditLog, CustodyEvent, Evidence, LedgerAnchor, LedgerBlock
 from app.schemas.schemas import (
     EvidenceResponse,
     IntegrityVerificationResult,
@@ -62,6 +68,79 @@ def ledger_blocks(limit: int = 100, db: Session = Depends(get_db), user=Depends(
 def verify_ledger(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Walk the whole chain and report the first break, if any."""
     return ledger.verify_chain(db)
+
+
+@router.get("/ledger/anchoring")
+def anchoring_status(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Chaincode reachability and outbox health.
+
+    Separate from /ledger/verify so a caller can ask "is the distributed anchor
+    working?" without walking the whole local chain.
+    """
+    return ledger.fabric_status(db)
+
+
+@router.post("/ledger/drain")
+def drain_anchors(db: Session = Depends(get_db), user=Depends(require_admin)):
+    """Deliver queued anchors now, rather than waiting for the worker.
+
+    The background worker does this on a cadence; this exists so an operator can
+    force a pass after the network comes back, and so a demo does not have to
+    wait out the interval.
+    """
+    return ledger.outbox.drain_once(db)
+
+
+@router.get("/{evidence_id}/fabric-anchor")
+def fabric_anchor(evidence_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """What the chaincode holds for this evidence item, independently of our database.
+
+    This is the point of the whole exercise: the answer comes from a ledger the
+    SPEMACS database cannot write to directly, so it is a second opinion rather
+    than an echo.
+    """
+    item = _load(db, user, evidence_id)
+    status = ledger.fabric_status(db)
+
+    if not status.get("enabled"):
+        return {
+            "evidence_id": evidence_id,
+            "enabled": False,
+            "detail": status.get("detail"),
+            "anchor": None,
+            "history": [],
+        }
+
+    anchor = ledger.fabric.get_anchor(evidence_id)
+    history = ledger.anchor_history(evidence_id)
+    verification = ledger.verify_against_fabric(evidence_id, item.sha256_hash or "")
+
+    pending_rows = (
+        db.query(LedgerAnchor)
+        .filter(
+            LedgerAnchor.evidence_id == evidence_id,
+            LedgerAnchor.status != "ANCHORED",
+        )
+        .count()
+    )
+
+    return {
+        "evidence_id": evidence_id,
+        "enabled": True,
+        "reachable": status.get("reachable"),
+        "channel": status.get("channel"),
+        "chaincode": status.get("chaincode"),
+        "anchor": anchor,
+        "history": history,
+        "verification": verification,
+        "unanchored_entries": pending_rows,
+        "detail": (
+            "Anchor read from chaincode, which is a separate store from the "
+            "database holding this evidence record."
+            if anchor
+            else "No anchor on the ledger yet for this item."
+        ),
+    }
 
 
 @router.get("/{evidence_id}", response_model=EvidenceResponse)

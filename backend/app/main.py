@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.models.database import engine, Base, SessionLocal, run_migrations
 from app.services.ingestion import seed_database_and_graph
+from app.services.ledger import worker as ledger_worker
 from app.api import auth, cases, graph, map_timeline, evidence, ai, osint, ingestion, cross_case, users, audit
 
 # Alembic owns the schema. Upgrading here means a fresh database is usable
@@ -39,12 +40,21 @@ app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     db = SessionLocal()
     try:
         seed_database_and_graph(db)
     finally:
         db.close()
+
+    # Delivers queued anchors to chaincode in the background. A no-op unless
+    # FABRIC_ENABLED is set, and never in the path of a request.
+    ledger_worker.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await ledger_worker.stop()
 
 @app.get("/")
 def root():
@@ -61,7 +71,9 @@ def health_check():
         "status": "healthy",
         "database": "connected",
         "version": settings.VERSION,
-        "demo_mode": settings.DEMO_MODE
+        "demo_mode": settings.DEMO_MODE,
+        "fabric_anchoring": settings.FABRIC_ENABLED,
+        "anchor_worker": ledger_worker.running()
     }
 
 if __name__ == "__main__":
