@@ -48,3 +48,7 @@ fabric/**/node_modules/
 fabric/**/package-lock.json
 fabric/network/organizations/
 fabric/network/*.tar.gz
+
+# Integrity ledger store (data, never committed)
+spemacs_ledger.db
+*_ledger.db

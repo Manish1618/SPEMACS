@@ -67,9 +67,14 @@ kept as decoration.
 
 ### D2.3 — Transactional outbox, never inline writes
 
-`ledger_anchors` records the committed intent to anchor, written in the same
-transaction as the `LedgerBlock`. A background worker delivers it afterwards.
-Delivery is idempotent on a payload-derived `anchor_id`.
+`ledger_anchors` records the committed intent to anchor, written in the caller's
+own transaction alongside the evidence row. A background worker delivers it
+afterwards. Delivery is idempotent on a payload-derived `anchor_id`.
+
+(Since the ledger store separation below, the `LedgerBlock` itself commits first,
+to its own database, before the outbox row is enqueued. A caller that then rolls
+back leaves an orphan local block and no outbox row, so nothing reaches Fabric
+that was not also recorded locally.)
 
 **Rationale:** Postgres and Fabric cannot commit atomically. Inline writes
 produce either anchors with no evidence behind them, or evidence whose anchor
@@ -138,8 +143,21 @@ change" was never the zero-cost option it appeared to be.
 These were costed alongside chaincode and are **not** superseded by it. They
 remain the right work, and two of them are independent of Fabric entirely:
 
-1. Move the local ledger to its own store with `INSERT`-only permissions — still
-   the right default for `FABRIC_ENABLED=false` deployments.
+1. ~~Move the local ledger to its own store with `INSERT`-only permissions.~~
+   **Done.** `LedgerBlock` now lives on its own engine
+   (`backend/app/models/ledger_store.py`) behind `LEDGER_DATABASE_URL`, and is
+   absent from the attested database entirely. This satisfies `ADR-0001` D2's
+   original requirement for `FABRIC_ENABLED=false` deployments, which is the
+   default — the requirement D2 set but which was never implemented.
+
+   Two consequences worth recording. **Atomicity with the evidence row is gone**:
+   two databases cannot commit together, so `append_block` commits the ledger
+   entry *before* the caller commits its evidence row. A caller that then fails
+   leaves an orphan block — the ledger over-recording rather than
+   under-recording, which is the safe direction. **Append-only is enforced by
+   grants, not code**: the ORM guard catches programming mistakes, but the real
+   control is granting the ledger user `SELECT, INSERT` and nothing else. The
+   SQLite default cannot enforce that, making it a development convenience.
 2. Sign each block with an agency key (Ed25519) for non-repudiation.
 3. Periodic Merkle root anchoring to an RFC 3161 timestamp authority, giving
    third-party verifiability without depending on the Fabric network being up.

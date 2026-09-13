@@ -13,7 +13,7 @@ from app.core.security import (
     require_role,
 )
 from app.models.database import get_db
-from app.models.entities import AuditLog, CustodyEvent, Evidence, LedgerAnchor, LedgerBlock
+from app.models.entities import AuditLog, CustodyEvent, Evidence, LedgerAnchor
 from app.schemas.schemas import (
     EvidenceResponse,
     IntegrityVerificationResult,
@@ -56,12 +56,9 @@ def list_evidence(
 
 @router.get("/ledger", response_model=List[LedgerBlockOut])
 def ledger_blocks(limit: int = 100, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    return (
-        db.query(LedgerBlock)
-        .order_by(LedgerBlock.block_number.desc())
-        .limit(min(limit, 500))
-        .all()
-    )
+    # Read from the ledger's own store, not from `db` -- the whole point of the
+    # separation is that this data is not reachable through the evidence session.
+    return ledger.recent_blocks(min(limit, 500))
 
 
 @router.get("/ledger/verify")

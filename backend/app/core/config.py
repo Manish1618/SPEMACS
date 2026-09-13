@@ -108,6 +108,16 @@ class Settings(BaseSettings):
     STORAGE_DIR: Path = _BASE_DIR / "storage"
 
     DATABASE_URL: str = f"sqlite:///{_BASE_DIR}/spemass.db"
+
+    # --- Integrity ledger store ------------------------------------------
+    # The ledger must not live in the database it attests: if one credential can
+    # edit an evidence record and rewrite the chain that proves it unaltered,
+    # the chain proves nothing. Defaults to a separate SQLite file so the
+    # separation holds out of the box; point it at its own PostgreSQL database
+    # in a real deployment, with a user granted SELECT and INSERT only.
+    # See app/models/ledger_store.py for the grants.
+    LEDGER_DATABASE_URL: str = f"sqlite:///{_BASE_DIR}/spemacs_ledger.db"
+
     GEMINI_API_KEY: str = ""
 
     # --- Hyperledger Fabric anchoring ------------------------------------
@@ -168,6 +178,14 @@ class Settings(BaseSettings):
                 "DEMO_MODE: no SECRET_KEY configured, using an ephemeral key. "
                 "Every session is invalidated when this process restarts. "
                 "Set SECRET_KEY in backend/.env to keep sessions across restarts."
+            )
+
+        if self.LEDGER_DATABASE_URL == self.DATABASE_URL:
+            logger.warning(
+                "LEDGER_DATABASE_URL matches DATABASE_URL: the integrity ledger is "
+                "stored in the database it attests, so a single writer can alter "
+                "evidence and rewrite its anchor together. Point it at a separate "
+                "store before relying on tamper detection."
             )
 
         if self.SMS_PROVIDER.lower() not in ("console", "twilio", "msg91"):

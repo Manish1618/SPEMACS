@@ -179,11 +179,12 @@ not attest, see [fabric/README.md](fabric/README.md) and
 - PDF and image text extraction needs optional extras (`pypdf`, `pytesseract`,
   `Pillow`, plus the tesseract binary). Without them the API runs normally and
   reports that extraction is unavailable.
-- **The local ledger still lives in the database it attests.** `LedgerBlock` is
-  declared alongside `Evidence`, so a writer with database access can alter both
-  together. Fabric anchoring closes this by putting the attestation outside that
-  database; with `FABRIC_ENABLED=false` the weakness remains. Giving the local
-  ledger its own `INSERT`-only store is tracked in ADR-0002.
+- **The ledger's append-only guarantee is enforced by grants, not by code.** The
+  ORM refuses to update or delete a sealed block, which catches programming
+  mistakes, but anyone holding the ledger credential can still do it in `psql`.
+  The real control is granting that user `SELECT, INSERT` and nothing else --
+  see `backend/app/models/ledger_store.py`. The SQLite default cannot enforce
+  this at all, so it is a development convenience rather than a deployment.
 - **The anchor drain worker is single-process**, like the login rate limiter.
   Behind several uvicorn workers each runs its own copy; delivery stays correct
   because the chaincode deduplicates, but run the drain in one process before

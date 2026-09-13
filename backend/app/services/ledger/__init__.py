@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.entities import LedgerBlock
+from app.models.ledger_store import LedgerBlock, is_separate_store, store_description
 from app.services.ledger import fabric, outbox, worker
 from app.services.ledger.local import (
     GENESIS_PREVIOUS_HASH,
@@ -36,6 +36,7 @@ from app.services.ledger.local import (
     find_anchor,
     get_head,
     hash_payload,
+    recent_blocks,
 )
 from app.services.ledger.local import append_block as _append_local
 from app.services.ledger.local import verify_chain as _verify_local
@@ -49,6 +50,9 @@ __all__ = [
     "find_anchor",
     "get_head",
     "hash_payload",
+    "is_separate_store",
+    "recent_blocks",
+    "store_description",
     "outbox",
     "worker",
     "verify_chain",

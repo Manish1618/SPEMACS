@@ -453,7 +453,7 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
               <div className="p-3.5 bg-dark-800 rounded-xl border border-gray-800 space-y-1">
                 <div className="flex items-center space-x-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                   <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Local Ledger Block</span>
+                  <span>Hash-Chained Ledger Block</span>
                 </div>
                 <div className="text-xs font-mono text-indigo-300 break-all select-all">
                   {selectedEvidence.blockchain_tx_id || 'Not yet anchored'}
@@ -461,7 +461,7 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
                 <div className="text-[10px] text-gray-400 font-mono">
                   {selectedEvidence.blockchain_block_num !== null &&
                    selectedEvidence.blockchain_block_num !== undefined
-                    ? `Block #${selectedEvidence.blockchain_block_num} - hash-chained, stored in this database`
+                    ? `Block #${selectedEvidence.blockchain_block_num} - hash-chained, held in a store separate from this record`
                     : 'No local ledger block for this item'}
                 </div>
               </div>

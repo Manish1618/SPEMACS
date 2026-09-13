@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.models.database import engine, Base, SessionLocal, run_migrations
+from app.models.ledger_migration import migrate_if_needed
+from app.models.ledger_store import init_ledger_store
 from app.services.ingestion import seed_database_and_graph
 from app.services.ledger import worker as ledger_worker
 from app.api import auth, cases, graph, map_timeline, evidence, ai, osint, ingestion, cross_case, users, audit
@@ -9,6 +11,12 @@ from app.api import auth, cases, graph, map_timeline, evidence, ai, osint, inges
 # Alembic owns the schema. Upgrading here means a fresh database is usable
 # immediately and an existing one is never left a revision behind.
 run_migrations()
+
+# The integrity ledger keeps its own store, so it has its own setup: create the
+# table if absent, then copy across any blocks still sitting in the attested
+# database from before the separation. Both are idempotent.
+init_ledger_store()
+migrate_if_needed()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

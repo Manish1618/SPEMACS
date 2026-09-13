@@ -314,19 +314,16 @@ class LedgerAnchor(Base):
     anchored_at = Column(DateTime, nullable=True)
 
 
-class LedgerBlock(Base):
-    """Permissioned append-only ledger. Each block hash-chains to its predecessor,
-    so altering any historic custody record invalidates every block after it."""
-
-    __tablename__ = "ledger_blocks"
-
-    block_number = Column(Integer, primary_key=True, autoincrement=False)
-    previous_hash = Column(String(64), nullable=False)
-    payload = Column(JSON, nullable=False)
-    payload_hash = Column(String(64), nullable=False)
-    block_hash = Column(String(64), nullable=False, index=True)
-    sealed_by = Column(String(100), nullable=False)
-    timestamp = Column(DateTime, default=get_utc_now)
+# LedgerBlock deliberately does NOT live here.
+#
+# It was on this Base until the integrity ledger was given a store of its own.
+# Declaring it alongside Evidence meant the proof that evidence had not been
+# altered sat in the database holding the evidence, so one credential could edit
+# both in a single transaction and verification would still pass.
+#
+# It now lives in app/models/ledger_store.py on a separate engine. See that
+# module for the trade-offs that separation brings, and for the grants that make
+# the store genuinely append-only.
 
 
 class NotificationLog(Base):
