@@ -137,6 +137,32 @@ criminality from association.
 
 ---
 
+## Evidence anchoring on Hyperledger Fabric
+
+Optional, and **off by default** — the app runs on its local hash-chained ledger
+with no Docker, no network and no extra processes.
+
+Switched on, every evidence digest and custody event is additionally anchored to
+Fabric chaincode endorsed by **two organisations**, so no single agency can write
+or rewrite custody history alone. That one property is the whole reason the
+subsystem exists; a single-organisation network would provide none of it.
+
+The local chain always commits first, inside the same transaction as the evidence
+row, and Fabric anchoring happens afterwards through an outbox. An evidence write
+therefore never blocks on consensus and never fails because the network is down —
+the anchor stays queued until it can be delivered.
+
+```bash
+cd fabric/chaincode/spemacs-ledger && npm install && npm test
+```
+
+That runs the contract's own tests with no network at all. For the full setup —
+WSL2, Docker, the two-org network, the gateway — and for what this does and does
+not attest, see [fabric/README.md](fabric/README.md) and
+[ADR-0002](docs/adr/0002-fabric-chaincode-evidence-anchoring.md).
+
+---
+
 ## Known limitations
 
 - **Sessions are single-process.** The login rate limiter keeps its counters in
@@ -153,3 +179,13 @@ criminality from association.
 - PDF and image text extraction needs optional extras (`pypdf`, `pytesseract`,
   `Pillow`, plus the tesseract binary). Without them the API runs normally and
   reports that extraction is unavailable.
+- **The ledger's append-only guarantee is enforced by grants, not by code.** The
+  ORM refuses to update or delete a sealed block, which catches programming
+  mistakes, but anyone holding the ledger credential can still do it in `psql`.
+  The real control is granting that user `SELECT, INSERT` and nothing else --
+  see `backend/app/models/ledger_store.py`. The SQLite default cannot enforce
+  this at all, so it is a development convenience rather than a deployment.
+- **The anchor drain worker is single-process**, like the login rate limiter.
+  Behind several uvicorn workers each runs its own copy; delivery stays correct
+  because the chaincode deduplicates, but run the drain in one process before
+  scaling out.

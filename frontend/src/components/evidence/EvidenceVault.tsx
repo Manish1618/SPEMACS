@@ -1,17 +1,207 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, ShieldAlert, AlertTriangle, RefreshCw, Hash, Cpu, Lock } from 'lucide-react';
-import type { EvidenceItem } from '../../types';
+import { ShieldCheck, ShieldAlert, AlertTriangle, RefreshCw, Hash, Cpu, Lock, Link2, Link2Off, FlaskConical } from 'lucide-react';
+import type { AnchoringStatus, EvidenceItem, FabricAnchor } from '../../types';
 import { api } from '../../lib/api';
 
 interface EvidenceVaultProps {
   activeCaseId: string;
 }
 
+/** Header pill: is anchoring on, is the ledger reachable, and is it the stub? */
+const AnchoringBadge: React.FC<{ status: AnchoringStatus }> = ({ status }) => {
+  if (!status.enabled) {
+    return (
+      <span
+        title={status.detail}
+        className="text-[10px] bg-gray-600/20 text-gray-400 px-2 py-0.5 rounded font-mono border border-gray-600/30 flex items-center space-x-1"
+      >
+        <Link2Off className="w-3 h-3" />
+        <span>Local ledger only</span>
+      </span>
+    );
+  }
+
+  if (!status.reachable) {
+    return (
+      <span
+        title={status.detail}
+        className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-mono border border-amber-500/30 flex items-center space-x-1"
+      >
+        <Link2Off className="w-3 h-3" />
+        <span>Ledger unreachable</span>
+      </span>
+    );
+  }
+
+  // A stub answer must never look like a real anchor.
+  const isStub = status.mode === 'stub' || (status.channel || '').toLowerCase() === 'stub';
+  if (isStub) {
+    return (
+      <span
+        title={status.detail}
+        className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-500/30 flex items-center space-x-1"
+      >
+        <FlaskConical className="w-3 h-3" />
+        <span>Stub ledger - no consensus</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title={status.detail}
+      className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono border border-emerald-500/30 flex items-center space-x-1"
+    >
+      <Link2 className="w-3 h-3" />
+      <span>Fabric {status.channel} - 2 orgs</span>
+    </span>
+  );
+};
+
+/** One of the two independent verdicts shown after a verification. */
+const VerdictTile: React.FC<{ label: string; ok: boolean; detail: string; muted?: boolean }> = ({
+  label,
+  ok,
+  detail,
+  muted = false,
+}) => (
+  <div
+    className={`p-2.5 rounded border ${
+      muted
+        ? 'bg-dark-900/60 border-gray-700 text-gray-400'
+        : ok
+        ? 'bg-emerald-950/50 border-emerald-600/40 text-emerald-200'
+        : 'bg-red-950/50 border-red-600/50 text-red-200'
+    }`}
+  >
+    <div className="text-[10px] uppercase tracking-wider font-bold opacity-80">{label}</div>
+    <div className="text-xs font-bold mt-0.5">{muted ? 'Not consulted' : ok ? 'MATCH' : 'MISMATCH'}</div>
+    <div className="text-[10px] mt-0.5 opacity-80 leading-snug">{detail}</div>
+  </div>
+);
+
+const FabricVerdictTile: React.FC<{ verification?: any }> = ({ verification }) => {
+  if (!verification || !verification.checked) {
+    return (
+      <VerdictTile
+        label="Permissioned ledger"
+        ok={false}
+        muted
+        detail={verification?.detail || 'Anchoring is disabled for this deployment.'}
+      />
+    );
+  }
+  return (
+    <VerdictTile
+      label="Permissioned ledger"
+      ok={!!verification.match}
+      detail={
+        verification.match
+          ? 'Digest matches the anchor held outside this database'
+          : `Ledger holds ${String(verification.anchored_sha256 || '').slice(0, 16)}...`
+      }
+    />
+  );
+};
+
+/** What chaincode holds for this item, and how it got there. */
+const FabricAnchorPanel: React.FC<{
+  anchor: FabricAnchor | null;
+  status: AnchoringStatus | null;
+}> = ({ anchor, status }) => {
+  if (!status?.enabled) {
+    return (
+      <div className="p-3.5 bg-dark-800/60 rounded-xl border border-gray-800 border-dashed">
+        <div className="flex items-center space-x-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+          <Link2Off className="w-3.5 h-3.5" />
+          <span>Permissioned Ledger Anchor</span>
+        </div>
+        <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+          Anchoring is switched off. Integrity rests on the local hash chain alone, which is
+          stored in the same database it attests. Start the ledger and set FABRIC_ENABLED=true
+          to anchor independently.
+        </p>
+      </div>
+    );
+  }
+
+  if (!anchor || !anchor.anchor) {
+    return (
+      <div className="p-3.5 bg-dark-800 rounded-xl border border-amber-600/30">
+        <div className="flex items-center space-x-1.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+          <Link2Off className="w-3.5 h-3.5" />
+          <span>Permissioned Ledger Anchor</span>
+        </div>
+        <p className="text-[11px] text-gray-400 mt-1">
+          {anchor?.detail || 'No anchor on the ledger yet for this item.'}
+          {!!anchor?.unanchored_entries && ` ${anchor.unanchored_entries} entr(ies) still queued.`}
+        </p>
+      </div>
+    );
+  }
+
+  const record = anchor.anchor;
+  const verified = anchor.verification?.match;
+
+  return (
+    <div className="p-3.5 bg-dark-800 rounded-xl border border-gray-800 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+          <Link2 className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Permissioned Ledger Anchor</span>
+        </div>
+        <span className="text-[10px] font-mono text-gray-500">
+          {anchor.channel} / {anchor.chaincode}
+        </span>
+      </div>
+
+      <p className="text-[10px] text-gray-500 leading-snug">
+        Read from chaincode, which is a separate store from the database holding this evidence
+        record. A digest that matches here was not written by whoever wrote the record.
+      </p>
+
+      <div className="text-[11px] font-mono space-y-1 bg-dark-900/60 p-2.5 rounded border border-gray-800">
+        <div>
+          Anchored digest:{' '}
+          <span className={verified ? 'text-emerald-400' : 'text-red-400 font-bold'}>
+            {record.sha256}
+          </span>
+        </div>
+        <div>Transaction: <span className="text-indigo-300">{record.txId}</span></div>
+        <div>Sealed by: <span className="text-gray-300">{record.actor}</span></div>
+        <div>Recorded: <span className="text-gray-300">{record.recordedAt}</span></div>
+      </div>
+
+      {anchor.history.length > 0 && (
+        <div>
+          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">
+            Ledger version history ({anchor.history.length})
+          </div>
+          <div className="space-y-1">
+            {anchor.history.map((h, i) => (
+              <div
+                key={h.txId + i}
+                className="flex items-center justify-between text-[10px] font-mono bg-dark-900/40 px-2 py-1 rounded border border-gray-800/70"
+              >
+                <span className="text-gray-300">{h.value?.kind || 'record'}</span>
+                <span className="text-gray-500 truncate mx-2">{h.txId}</span>
+                <span className="text-gray-500">{h.timestamp || ''}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) => {
   const [evidenceList, setEvidenceList] = useState<EvidenceItem[]>([]);
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
   const [verificationResult, setVerificationResult] = useState<any | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [anchoring, setAnchoring] = useState<AnchoringStatus | null>(null);
+  const [fabricAnchor, setFabricAnchor] = useState<FabricAnchor | null>(null);
 
   const fetchEvidence = async () => {
     try {
@@ -25,9 +215,34 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
     }
   };
 
+  const fetchAnchoring = async () => {
+    try {
+      setAnchoring(await api.getAnchoringStatus());
+    } catch (e) {
+      // Anchoring status is supplementary; never break the vault over it.
+      setAnchoring(null);
+    }
+  };
+
+  const fetchFabricAnchor = async (evId: string) => {
+    setFabricAnchor(null);
+    try {
+      setFabricAnchor(await api.getFabricAnchor(evId));
+    } catch (e) {
+      setFabricAnchor(null);
+    }
+  };
+
   useEffect(() => {
     fetchEvidence();
+    fetchAnchoring();
   }, [activeCaseId]);
+
+  useEffect(() => {
+    if (selectedEvidence) {
+      fetchFabricAnchor(selectedEvidence.evidence_id);
+    }
+  }, [selectedEvidence?.evidence_id]);
 
   const handleVerify = async (evId: string) => {
     setIsVerifying(true);
@@ -36,6 +251,8 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
       const res = await api.verifyIntegrity(evId);
       setVerificationResult(res);
       fetchEvidence();
+      fetchFabricAnchor(evId);
+      fetchAnchoring();
     } catch (e) {
       console.error(e);
     } finally {
@@ -49,6 +266,7 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
       const res = await api.simulateTamper(evId);
       setVerificationResult(res.verification_result);
       fetchEvidence();
+      fetchFabricAnchor(evId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -62,6 +280,7 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
       const res = await api.restoreClean(evId);
       setVerificationResult(res.verification_result);
       fetchEvidence();
+      fetchFabricAnchor(evId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -79,12 +298,14 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
           </div>
           <div>
             <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <span>Cryptographic Evidence Vault & Blockchain Ledger</span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono border border-emerald-500/30">
-                WORM Compliant
-              </span>
+              <span>Cryptographic Evidence Vault & Permissioned Ledger</span>
+              {anchoring && <AnchoringBadge status={anchoring} />}
             </h3>
-            <p className="text-[11px] text-gray-400">SHA-256 evidence hashing, tamper detection & immutable custody log</p>
+            <p className="text-[11px] text-gray-400">
+              {anchoring?.enabled && anchoring?.outbox
+                ? `SHA-256 hashing, tamper detection - ${anchoring.outbox.detail}`
+                : 'SHA-256 evidence hashing, tamper detection & hash-chained custody log'}
+            </p>
           </div>
         </div>
 
@@ -194,7 +415,25 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
                 <div className="mt-2 text-[11px] font-mono space-y-1 bg-dark-900/60 p-2.5 rounded border border-gray-800">
                   <div>Stored SHA-256: <span className="text-gray-300">{verificationResult.stored_hash}</span></div>
                   <div>Live SHA-256:   <span className={verificationResult.is_valid ? "text-emerald-400" : "text-red-400 font-bold"}>{verificationResult.recalculated_hash}</span></div>
-                  <div>Blockchain TX: <span className="text-indigo-400">{verificationResult.blockchain_tx_id || 'N/A'}</span></div>
+                  <div>
+                    Local ledger block:{' '}
+                    <span className="text-indigo-400">
+                      {verificationResult.blockchain_tx_id
+                        ? `${String(verificationResult.blockchain_tx_id).slice(0, 32)}...`
+                        : 'not anchored locally'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Two independent opinions, reported separately so a reader can
+                    see which guarantee is actually speaking. */}
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                  <VerdictTile
+                    label="Local hash chain"
+                    ok={verificationResult.is_valid}
+                    detail={verificationResult.is_valid ? 'Digest matches the sealed value' : 'Digest does not match'}
+                  />
+                  <FabricVerdictTile verification={verificationResult.fabric_verification} />
                 </div>
               </div>
             )}
@@ -214,16 +453,22 @@ export const EvidenceVault: React.FC<EvidenceVaultProps> = ({ activeCaseId }) =>
               <div className="p-3.5 bg-dark-800 rounded-xl border border-gray-800 space-y-1">
                 <div className="flex items-center space-x-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                   <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Blockchain Anchor Transaction</span>
+                  <span>Hash-Chained Ledger Block</span>
                 </div>
                 <div className="text-xs font-mono text-indigo-300 break-all select-all">
-                  {selectedEvidence.blockchain_tx_id || '0x44ab89c2...'}
+                  {selectedEvidence.blockchain_tx_id || 'Not yet anchored'}
                 </div>
                 <div className="text-[10px] text-gray-400 font-mono">
-                  Block #{selectedEvidence.blockchain_block_num || 14200001} • Anchored at Registration
+                  {selectedEvidence.blockchain_block_num !== null &&
+                   selectedEvidence.blockchain_block_num !== undefined
+                    ? `Block #${selectedEvidence.blockchain_block_num} - hash-chained, held in a store separate from this record`
+                    : 'No local ledger block for this item'}
                 </div>
               </div>
             </div>
+
+            {/* What chaincode holds -- a store this database cannot write to */}
+            <FabricAnchorPanel anchor={fabricAnchor} status={anchoring} />
 
             {/* Chain of Custody Audit Log */}
             <div className="space-y-2">

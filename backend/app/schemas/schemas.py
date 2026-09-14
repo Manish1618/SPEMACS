@@ -215,6 +215,9 @@ class IntegrityVerificationResult(BaseModel):
     is_valid: bool
     verified_at: datetime
     message: str
+    # What the permissioned Fabric ledger says about this digest, independently
+    # of this database. {"checked": false, ...} when anchoring is switched off.
+    fabric_verification: Optional[Dict[str, Any]] = None
 
 # --- Graph & Workspace Schemas ---
 class GraphNode(BaseModel):
